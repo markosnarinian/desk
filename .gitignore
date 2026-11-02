@@ -1,0 +1,9 @@
+/bin/
+/dist/
+/site/node_modules/
+/site/dist/
+/site/.astro/
+**/.amp/portals/
+/.amp/in/
+.env
+.env.*

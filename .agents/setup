@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+set -euo pipefail
+root="$(cd "$(dirname "$0")/.." && pwd)"
+
+if ! command -v go >/dev/null || [[ "$(go env GOVERSION)" != go1.27.3 ]]; then
+  echo 'Installing Go 1.27.3 (Linux amd64 orb)'
+  archive="$(mktemp)"
+  trap 'rm -f "$archive"' EXIT
+  curl -fsSL https://go.dev/dl/go1.27.3.linux-amd64.tar.gz -o "$archive"
+  echo "65efbc80fdc1fa2cd2631cad5b481777a68e8725f34e89f50fc6ac714e379b40  $archive" | sha256sum -c -
+  sudo mkdir -p /opt/desk-go-1.27.3
+  sudo tar -xzf "$archive" -C /opt/desk-go-1.27.3 --strip-components=1
+  sudo ln -sf /opt/desk-go-1.27.3/bin/go /usr/local/bin/go
+  sudo ln -sf /opt/desk-go-1.27.3/bin/gofmt /usr/local/bin/gofmt
+fi
+
+echo 'Installing site dependencies from lockfile'
+npm --prefix "$root/site" ci --no-audit --no-fund
+echo 'Building CLI and site preview'
+(cd "$root/cli" && go build -o "$root/bin/desk" .)
+npm --prefix "$root/site" run build
