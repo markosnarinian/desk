@@ -1,0 +1,60 @@
+---
+title: Retention rules
+description: The checks a workspace must pass before desk will quarantine or purge it.
+---
+
+## Principle
+
+desk only moves a workspace when it can show that nothing in it would be lost. If any check fails, or cannot be completed, the workspace is **retained**, and `desk list` and `desk gc` show the first reason why.
+
+Checks can be conservative. Keeping a workspace that was actually safe to remove is always preferred over losing data.
+
+## Every Workspace
+
+A workspace is retained when:
+
+- it is **pinned** with `desk keep`;
+- it has an **active session**, or its session lock cannot be taken;
+- its directory is **missing**, is not an ordinary directory, or exists both in storage and in quarantine.
+
+`desk gc --apply` also only considers workspaces that are marked done and not already quarantined.
+
+## Scratch Workspaces
+
+A scratch workspace is eligible only when it is **completely empty**. Any file or directory, including a dotfile, retains it.
+
+## Repository Workspaces
+
+Being clean according to `git status` is not enough. A repository workspace must also satisfy all of the following.
+
+### Structure
+
+- It is an independent clone with its own `.git` directory, and the Git work tree root is the workspace directory.
+- It has no shallow history, alternates, or grafts.
+- It has exactly one worktree.
+- It has no submodules.
+- No index entries are marked skip-worktree or assume-unchanged.
+- No tracked file uses a content filter, which includes Git LFS. Filtered content cannot be verified through Git's history.
+
+### Working Tree
+
+- No tracked changes, no untracked files, and no **ignored** files. Ignored files such as `.env`, local databases, and build output often matter, so they retain the workspace too.
+
+### Remote Evidence
+
+desk asks origin directly with `git ls-remote`. Cached remote-tracking branches are not trusted.
+
+- Origin must be usable and reachable. A local-path origin must exist and must not be inside desk's own storage.
+- Every local branch name must exist on origin.
+- Every local tag must exist on origin and point to the same object.
+- No commit reachable from `HEAD`, any local ref, or any reflog may be missing from what origin currently advertises. This covers unpushed commits, stashes, detached commits, and history from deleted branches.
+
+<Callout type="info">
+Git metadata such as configuration, hooks, and reflogs is treated as part of the disposable checkout. Pin a workspace if you need to keep it.
+</Callout>
+
+## At Purge Time
+
+`desk purge` runs every check again on the quarantined workspace. Files added in quarantine, or an origin that has since disappeared, block the purge. The workspace must also have been in quarantine for at least seven days.
+
+Origin is a recovery source, not a guaranteed backup. If it matters, keep a copy somewhere you control.

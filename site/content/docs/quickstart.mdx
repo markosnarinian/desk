@@ -1,0 +1,86 @@
+---
+title: Quickstart
+description: Create a workspace, leave it, find it again, and preview cleanup. Nothing in this walkthrough deletes data.
+---
+
+## Use a Trial Data Root
+
+Point desk at a separate data root so this walkthrough does not mix with real workspaces. Keep the variable set for every step below.
+
+```sh
+export DESK_HOME="$HOME/.desk-trial"
+```
+
+## Walkthrough
+
+<Steps>
+<Step title="Create a scratch workspace">
+```sh
+desk scratch experiment
+```
+
+desk prints the new workspace's ID, creates an empty directory, and starts your shell inside it:
+
+```text
+7e4a9b23c810
+desk: entering experiment (7e4a9b23c810); exit to return; nothing is deleted
+```
+</Step>
+<Step title="Do some work, then leave">
+You are in an ordinary interactive shell. Create a file, then exit.
+
+```sh
+echo "an idea" > notes.txt
+exit
+```
+
+You are back where you started. The workspace and `notes.txt` are still there.
+</Step>
+<Step title="Find it again">
+```sh
+desk list
+```
+
+```text
+ID            NAME          STATE  RETENTION               PATH
+7e4a9b23c810  "experiment"  ready  scratch contains files  /home/you/.desk-trial/workspaces/7e4a9b23c810
+```
+
+Use the ID to go back in with `desk enter 7e4a9b23c810`.
+</Step>
+<Step title="Mark it done">
+When you no longer need a workspace, mark it as a cleanup candidate. This does not delete or move anything.
+
+```sh
+desk done 7e4a9b23c810
+```
+</Step>
+<Step title="Preview cleanup">
+`desk gc` is a dry run by default. It explains what it would do with each workspace:
+
+```sh
+desk gc
+```
+
+```text
+7e4a9b23c810 retained: scratch contains files
+```
+
+desk keeps the workspace because it contains a file. Scratch workspaces are only eligible for cleanup when they are empty.
+</Step>
+</Steps>
+
+<Callout type="tip" title="Done with the trial?">
+Run `unset DESK_HOME` to return to your default data root. The trial root stays on disk until you remove it yourself.
+</Callout>
+
+## Next Steps
+
+<CardGroup cols={2}>
+<Card title="Repository workspaces" icon="git" href="/docs/repository-workspaces/">
+Clone and resume repositories with `desk open`.
+</Card>
+<Card title="Cleanup lifecycle" icon="archive" href="/docs/cleanup-lifecycle/">
+Quarantine, restore, and purge, step by step.
+</Card>
+</CardGroup>

@@ -1,0 +1,54 @@
+---
+title: desk purge
+description: Permanently delete a workspace that has been in quarantine for at least seven days.
+---
+
+<Callout type="danger" title="This cannot be undone">
+`purge` is the only command that deletes files. desk cannot restore a purged workspace.
+</Callout>
+
+## Usage
+
+```text title="Usage"
+desk purge ID --quiescent
+```
+
+## Arguments
+
+<ParamField name="ID" type="workspace ID" required>
+A quarantined workspace.
+</ParamField>
+
+## Flags
+
+<ParamField name="--quiescent" type="flag" required>
+Confirms that no process is using the workspace.
+</ParamField>
+
+## Behavior
+
+desk deletes the workspace's directory and removes it from the registry only when all of these hold:
+
+1. The workspace is in quarantine.
+2. It was quarantined at least **seven days** ago.
+3. It passes every [retention rule](/docs/retention-rules/) again, now. Files added in quarantine or an origin that has since disappeared block the purge.
+
+There is no batch purge and no automatic purge. Run the command once per workspace.
+
+## Example
+
+```sh
+desk purge 702378b08f9e --quiescent
+```
+
+```text
+purged 702378b08f9e
+```
+
+## Errors
+
+| Message | Cause |
+| --- | --- |
+| `only quarantined workspaces can be purged` | Quarantine it first with `remove` or `gc --apply`. |
+| `quarantine must be at least seven days old; restore and remove again if its timestamp is missing` | Wait until seven days have passed. |
+| A retention reason, such as `pinned` | The workspace failed a check and was kept. |

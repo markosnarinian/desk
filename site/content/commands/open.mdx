@@ -1,0 +1,53 @@
+---
+title: desk open
+description: Clone a repository into its own workspace, or resume the workspace that already has it.
+---
+
+## Usage
+
+```text title="Usage"
+desk open REPOSITORY [--no-enter]
+```
+
+## Arguments
+
+<ParamField name="REPOSITORY" type="string" required>
+One of:
+
+- `owner/repo`, expanded to `https://github.com/owner/repo.git`;
+- an `https://`, `ssh://`, `file://`, or `git@` URL, used as given;
+- a local path starting with `/`, `./`, or `../`, converted to an absolute path.
+</ParamField>
+
+## Flags
+
+<ParamField name="--no-enter" type="flag">
+Print the workspace ID without starting a shell.
+</ParamField>
+
+## Behavior
+
+If a repository workspace with the same normalized source exists, desk **resumes** it: it checks that the checkout is still a Git work tree, prints the ID, and enters it. It does not fetch, pull, or reset.
+
+Otherwise desk creates a workspace named after the repository and runs `git clone --no-local` into it. Clone progress is printed to standard error.
+
+<Callout type="warning" title="Failed clones are kept">
+If the clone fails, the directory is kept as a scratch workspace for inspection and desk reports its ID in the error. Nothing that Git left behind is deleted.
+</Callout>
+
+## Examples
+
+```sh
+desk open octocat/Hello-World
+desk open git@github.com:owner/private-repo.git --no-enter
+desk open ../local-project
+```
+
+## Errors
+
+| Message | Cause |
+| --- | --- |
+| `use owner/repo, an HTTPS/SSH Git URL, or an explicit local path` | The argument is not a recognized form. |
+| `workspace ID is quarantined; restore it first` | The existing workspace for this source is in quarantine. |
+| `checkout ID is incomplete; inspect it using desk list` | The existing workspace is no longer a Git work tree. |
+| `clone failed; workspace ID retained for inspection` | `git clone` failed. |

@@ -1,0 +1,35 @@
+---
+title: desk keep
+description: Pin a workspace so cleanup never moves it, or unpin it.
+---
+
+## Usage
+
+```text title="Usage"
+desk keep ID [--off]
+```
+
+## Arguments
+
+<ParamField name="ID" type="workspace ID" required>
+The workspace to pin or unpin.
+</ParamField>
+
+## Flags
+
+<ParamField name="--off" type="flag">
+Remove the pin instead of adding it.
+</ParamField>
+
+## Behavior
+
+A pinned workspace is retained by `gc`, `remove`, and `purge`, whatever its contents. `desk done` also refuses pinned workspaces.
+
+Pins are kept when a workspace is quarantined and restored.
+
+## Examples
+
+```sh
+desk keep bf22fab17609         # pin
+desk keep bf22fab17609 --off   # unpin
+```

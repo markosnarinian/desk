@@ -45,7 +45,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: desk-site
-          path: site/dist/
+          path: site/out/
 
   binaries:
     needs: [cli, site]

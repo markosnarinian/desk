@@ -1,0 +1,65 @@
+---
+title: Troubleshooting
+description: What desk's messages mean and what to do about them.
+---
+
+## Reading Retention Reasons
+
+`desk list` and `desk gc` show why a workspace is kept. Fix the cause, never delete work just to satisfy a check.
+
+| Reason | What to do |
+| --- | --- |
+| `not marked done` | Run `desk done ID` if you are finished with it. |
+| `pinned` | Run `desk keep ID --off` if it no longer needs protecting. |
+| `active session or unavailable session lock` | Exit every desk shell in the workspace. |
+| `scratch contains files` | Move or delete the files you need to keep, including dotfiles. |
+| `tracked changes, untracked files, or ignored files` | Run `git status --short --ignored`. Ignored files count. |
+| `local-only branch or tag name` | Push the branch or tag, or delete it if you are sure. |
+| `local tag differs from origin` | Compare with `git ls-remote --tags origin`. |
+| `local-only commits (including refs or reflogs)` | Check `git log --branches --not --remotes`, `git stash list`, and `git reflog`. |
+| `origin unavailable; cannot confirm recovery` | Check your network and credentials with `git ls-remote origin`. |
+| `submodules require manual retention` | desk does not clean up repositories with submodules. |
+| `tracked content filters (including Git LFS) require manual retention` | desk does not clean up repositories that use content filters. |
+
+## Command Errors
+
+### requires --quiescent
+
+```text
+desk: requires --quiescent: stop all processes using the workspace first
+```
+
+`remove`, `purge`, and `gc --apply` need `--quiescent`. Stop everything using the workspace, then add the flag.
+
+### workspace is pinned
+
+```text
+desk: workspace is pinned; use keep ID --off first
+```
+
+`desk done` refuses pinned workspaces. Unpin first if you really are finished.
+
+### quarantine must be at least seven days old
+
+`desk purge` only works seven days after quarantine. Wait, or restore the workspace if you want it back. If the quarantine timestamp is missing, restore and remove it again.
+
+### use owner/repo, an HTTPS/SSH Git URL, or an explicit local path
+
+`desk open` did not recognize the argument. Local paths need a `/`, `./`, or `../` prefix.
+
+### DESK_HOME must be absolute
+
+Set `DESK_HOME` to a full path such as `$HOME/desk-work`, not a relative one.
+
+## Git Authentication
+
+Retention checks run Git with prompts disabled. If private repositories show `origin unavailable`, make sure Git can authenticate without asking, for example with an SSH agent or a credential helper. Test from inside the workspace:
+
+```sh
+desk enter ID
+GIT_TERMINAL_PROMPT=0 git ls-remote origin
+```
+
+## Getting Help
+
+Run `desk help` for a summary of every command. See the [command reference](/commands/overview/) for details.

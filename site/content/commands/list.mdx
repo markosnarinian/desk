@@ -1,0 +1,47 @@
+---
+title: desk list
+description: Show every workspace with its state, retention reason, and location.
+---
+
+## Usage
+
+```text title="Usage"
+desk list
+```
+
+`list` takes no arguments or flags.
+
+## Output
+
+```text
+ID            NAME          STATE        RETENTION                                         PATH
+bb5ff6487d99  "experiment"  ready        eligible with --quiescent                         /home/you/.desk/workspaces/bb5ff6487d99
+702378b08f9e  "scratch"     quarantined  quarantine age: seven days required before purge  /home/you/.desk/quarantine/702378b08f9e
+bf22fab17609  "notes"       done         pinned                                            /home/you/.desk/workspaces/bf22fab17609
+```
+
+## Columns
+
+<ParamField name="ID">
+The workspace ID used by every other command.
+</ParamField>
+<ParamField name="NAME">
+The label, quoted.
+</ParamField>
+<ParamField name="STATE">
+`ready`, `done`, or `quarantined`. See [Workspaces](/docs/workspaces/#states).
+</ParamField>
+<ParamField name="RETENTION">
+The first [retention rule](/docs/retention-rules/) that keeps the workspace, or what it is eligible for:
+
+- `eligible with --quiescent`: it could be quarantined now;
+- `quarantine age: seven days required before purge`: it is quarantined and too young to purge;
+- `eligible for purge with --quiescent`: it is quarantined and could be purged.
+</ParamField>
+<ParamField name="PATH">
+The directory's actual location, in storage or in quarantine.
+</ParamField>
+
+<Callout type="tip">
+`desk list` runs the full retention checks, including `git ls-remote` for repository workspaces, so it may take a moment when you have many repositories.
+</Callout>

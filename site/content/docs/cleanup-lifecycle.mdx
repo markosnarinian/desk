@@ -1,0 +1,56 @@
+---
+title: Cleanup lifecycle
+description: Every step from finished work to permanent removal, and how to undo each one.
+---
+
+## Overview
+
+Cleanup in desk is a series of explicit steps. Nothing is triggered by exiting, by a timer, or by age.
+
+| Step | Command | Undo |
+| --- | --- | --- |
+| Mark as finished | `desk done ID` | `desk enter ID` |
+| Preview | `desk gc` | Nothing to undo |
+| Quarantine | `desk gc --apply --quiescent` or `desk remove ID --quiescent` | `desk restore ID` |
+| Delete permanently | `desk purge ID --quiescent` | Not possible |
+
+## The Steps
+
+<Steps>
+<Step title="Mark finished work">
+`desk done ID` flags a workspace as a cleanup candidate. It refuses pinned workspaces; unpin them first with `desk keep ID --off`. Entering the workspace again clears the flag.
+</Step>
+<Step title="Preview">
+`desk gc` (or `desk gc --dry-run`) prints one line per workspace: either the first reason it is retained, or that it would be quarantined.
+
+```text
+bb5ff6487d99 retained: not marked done
+702378b08f9e would quarantine (requires --apply --quiescent)
+bf22fab17609 retained: pinned
+```
+</Step>
+<Step title="Stop everything using the workspaces">
+Close shells, editors, servers, and background jobs that use the workspaces you are about to move. Passing `--quiescent` confirms that you did.
+</Step>
+<Step title="Quarantine">
+`desk gc --apply --quiescent` moves every workspace that is marked done and passes the [retention rules](/docs/retention-rules/) into quarantine. To quarantine one workspace without marking it done first, use `desk remove ID --quiescent`; it applies the same checks.
+
+Quarantine is a rename within the data root. The files are untouched, and `desk list` still shows them.
+</Step>
+<Step title="Restore, or purge after seven days">
+`desk restore ID` moves a workspace back and clears its done flag. Pins are preserved.
+
+`desk purge ID --quiescent` permanently deletes a quarantined workspace, but only once it has been in quarantine for at least seven days. It repeats every retention check first.
+</Step>
+</Steps>
+
+## What desk Never Does
+
+- Delete or quarantine a workspace when a shell exits.
+- Empty quarantine on its own. Quarantined workspaces stay until you purge them.
+- Purge in bulk. `purge` takes one ID at a time.
+- Offer a force flag. If a check fails, recover the work, then retry.
+
+<Callout type="danger" title="desk is not a backup">
+Purged workspaces cannot be recovered. desk does not protect against disk failure, other tools changing files, or malicious changes to its storage.
+</Callout>

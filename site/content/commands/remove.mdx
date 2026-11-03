@@ -1,0 +1,46 @@
+---
+title: desk remove
+description: Move a single workspace to quarantine.
+---
+
+## Usage
+
+```text title="Usage"
+desk remove ID --quiescent
+```
+
+## Arguments
+
+<ParamField name="ID" type="workspace ID" required>
+The workspace to quarantine.
+</ParamField>
+
+## Flags
+
+<ParamField name="--quiescent" type="flag" required>
+Confirms that no process is using the workspace.
+</ParamField>
+
+## Behavior
+
+`remove` quarantines one workspace without requiring it to be marked done first. Despite the name, it does **not** delete anything: the directory is renamed into `quarantine/`, where you can [restore](/commands/restore/) it.
+
+It applies the same [retention rules](/docs/retention-rules/) as `gc`, including pins. If a rule fails, desk prints the reason and leaves the workspace in place.
+
+## Example
+
+```sh
+desk remove 702378b08f9e --quiescent
+```
+
+```text
+quarantined 702378b08f9e
+```
+
+```sh
+desk remove bf22fab17609 --quiescent
+```
+
+```text
+desk: pinned
+```

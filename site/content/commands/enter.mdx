@@ -1,0 +1,39 @@
+---
+title: desk enter
+description: Start a shell in an existing workspace.
+---
+
+## Usage
+
+```text title="Usage"
+desk enter ID
+```
+
+## Arguments
+
+<ParamField name="ID" type="workspace ID" required>
+The full ID from `desk list`.
+</ParamField>
+
+## Behavior
+
+1. Refuses quarantined workspaces; [restore](/commands/restore/) them first.
+2. Takes a shared session lock on the workspace.
+3. **Clears the done flag**, since you are using the workspace again.
+4. Starts `$SHELL -i` (or `/bin/sh -i`) in the workspace with `DESK_WORKSPACE` set to the ID.
+
+When the shell exits, desk exits too. If the shell's exit status was non-zero, desk uses the same status.
+
+## Example
+
+```sh
+desk enter 7e4a9b23c810
+```
+
+```text
+desk: entering experiment (7e4a9b23c810); exit to return; nothing is deleted
+```
+
+<Callout type="info">
+You can enter the same workspace from several terminals at once. Each session holds its own lock, and cleanup waits until all of them have exited.
+</Callout>

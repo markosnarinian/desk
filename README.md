@@ -61,16 +61,15 @@ registry, locks, and quarantine. `DESK_HOME` overrides the root and must be
 absolute; `XDG_DATA_HOME` is not used. Configuration belongs in `~/.config/desk/`;
 desk currently has no configuration file and does not create that directory.
 Existing data in the previous platform-specific locations is not moved
-automatically; see [storage and configuration](site/src/content/docs/configuration.md).
+automatically; see [configuration](site/content/docs/configuration.mdx).
 Do not use OS-managed temporary storage for work you want to resume. Test fixtures
 use temporary storage only to isolate disposable tests.
 
 ## Development and documentation
 
 - `cli/`: Go executable and tests; no external Go dependencies.
-- `site/`: Astro + Starlight landing page, installation, quickstart, task guides,
-  command reference, configuration, troubleshooting, and cleanup guarantees.
-  The site imports `docs/safety.md` directly.
+- `site/`: Next.js + Chakra UI website: landing page, documentation, and a
+  command reference, written in MDX.
 - `scripts/release.sh`: local release archives and SHA-256 checksums.
 
 ```sh
@@ -81,15 +80,10 @@ npm --prefix site run build
 npm --prefix site run dev
 ```
 
-The site uses Node 26 in CI and follows the official
-[Astro](https://docs.astro.build/en/install-and-setup/) and
-[Starlight](https://starlight.astro.build/manual-setup/) setup. Search defaults to
-Pagefind until an Algolia DocSearch index and search-only credentials are supplied.
-Use `npm --prefix site run preview` to test the built search. Canonical URLs use
-`SITE_URL` or Vercel's production URL; without either, sitemap generation is skipped.
-See [website maintenance](docs/website.md) for Vercel and Algolia configuration.
-The current Astro/Starlight combination also emits a harmless duplicate `/404`
-route warning; the built `404.html` is checked in the browser.
+The site uses Node 26 in CI and builds to a static export in `site/out`. Use
+`npm --prefix site run preview` to serve the built site, including its search.
+Canonical URLs use `SITE_URL` or Vercel's production URL. See
+[website maintenance](docs/website.md) for content layout and Vercel settings.
 
 `.agents/setup` installs the pinned Go toolchain and builds the CLI and site in
 Linux amd64 Amp orbs. It needs no secrets. Run it from the repository root.

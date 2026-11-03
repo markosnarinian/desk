@@ -1,0 +1,58 @@
+---
+title: Workspaces
+description: The two kinds of workspace, how they are identified, and the states they move through.
+---
+
+## Two Kinds
+
+| Kind | Created by | Contents |
+| --- | --- | --- |
+| Scratch | `desk scratch [NAME]` | An empty directory |
+| Repository | `desk open REPOSITORY` | An independent Git clone with its own `.git` directory |
+
+Both kinds live in the same managed storage and use the same commands afterwards.
+
+## IDs and Names
+
+Every workspace gets a random **12-character hexadecimal ID**, such as `7e4a9b23c810`. The ID is the directory name and the argument every other command takes.
+
+The **name** is only a label shown by `desk list`. Scratch workspaces are called `scratch` unless you give a name; repository workspaces are named after the repository. Names do not have to be unique.
+
+## States
+
+`desk list` shows one of three states:
+
+<ParamField name="ready">
+The default. The workspace is in managed storage and you can enter it.
+</ParamField>
+<ParamField name="done">
+You marked it with `desk done`. It is a candidate for `desk gc --apply`. Entering it again clears this state.
+</ParamField>
+<ParamField name="quarantined">
+It was moved to quarantine by `desk gc --apply` or `desk remove`. Restore it before entering it.
+</ParamField>
+
+Separately from the state, a workspace can be **pinned** with `desk keep`. A pinned workspace is never moved, and cannot be marked done until you unpin it.
+
+## Where Workspaces Live
+
+desk keeps everything under one private data root:
+
+```text
+~/.desk/
+├── registry.json     # workspace names, kinds, sources, and flags
+├── registry.lock
+├── workspaces/       # one directory per workspace ID
+├── quarantine/       # quarantined workspaces, same layout
+└── locks/            # session locks
+```
+
+The `PATH` column of `desk list` always shows the real location, including for quarantined workspaces. See [Configuration](/docs/configuration/) for how to change the root.
+
+<Callout type="warning">
+Do not edit `registry.json`, replace workspace directories with symlinks, or share a data root between machines. desk refuses to work with directories that are not ordinary directories.
+</Callout>
+
+## Ownership
+
+desk only manages directories it created. It never adopts an existing directory, never follows a symlink in its storage, and never touches anything outside its data root.

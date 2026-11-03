@@ -1,0 +1,85 @@
+---
+title: Repository workspaces
+description: Clone a repository into its own workspace, return to it later, and know what keeps it from being cleaned up.
+---
+
+## Open a Repository
+
+`desk open` accepts several forms of repository:
+
+<Tabs>
+<Tab title="GitHub shorthand">
+
+```sh
+desk open octocat/Hello-World
+```
+
+`owner/repo` is expanded to `https://github.com/owner/repo.git`.
+
+</Tab>
+<Tab title="URL">
+
+```sh
+desk open https://gitlab.com/group/project.git
+desk open git@github.com:owner/repo.git
+desk open ssh://git@example.com/repo.git
+```
+
+HTTPS, SSH, `git@` and `file://` URLs are passed to Git as given.
+
+</Tab>
+<Tab title="Local path">
+
+```sh
+desk open ../my-project
+```
+
+Local paths must start with `/`, `./`, or `../`. They are converted to an absolute path.
+
+</Tab>
+</Tabs>
+
+desk runs `git clone --no-local` into a new workspace, prints its ID, and starts a shell in the checkout. Authentication uses your normal Git and SSH configuration.
+
+## Open It Again
+
+Running `desk open` again with the same source resumes the existing workspace instead of cloning a second copy:
+
+```sh
+desk open octocat/Hello-World   # same ID as before
+```
+
+desk does **not** fetch, pull, or reset when it resumes. Update the checkout yourself with Git.
+
+<Callout type="info">
+Sources are matched after normalization: `octocat/Hello-World` and `https://github.com/octocat/Hello-World.git` refer to the same workspace. Other spellings of the same remote, such as an SSH URL, are treated as different sources.
+</Callout>
+
+## When a Clone Fails
+
+If `git clone` fails, desk keeps the directory as a **scratch** workspace so you can inspect whatever was left behind, and reports its ID:
+
+```text
+desk: clone failed; workspace 5c1d0e9a7b32 retained for inspection: exit status 128
+```
+
+Fix the problem, such as credentials or a typo, and run `desk open` again. Clean up the failed workspace like any other scratch workspace.
+
+## Getting a Repository Ready for Cleanup
+
+Before marking a repository workspace done, make sure everything you care about exists on origin:
+
+```sh
+git status --short --ignored
+git log --branches --not --remotes
+git stash list
+```
+
+Then push or delete what is left, and preview:
+
+```sh
+desk done ID
+desk gc
+```
+
+`desk gc` prints the first [retention rule](/docs/retention-rules/) the workspace fails, such as `local-only branch or tag name` or `tracked changes, untracked files, or ignored files`.

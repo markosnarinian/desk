@@ -1,0 +1,56 @@
+---
+title: Sessions
+description: How desk runs your shell inside a workspace, and why leaving is always safe.
+---
+
+## Entering a Workspace
+
+`desk scratch`, `desk open`, and `desk enter` all start a session: desk runs `$SHELL` (or `/bin/sh` if it is unset) as an interactive subshell with the workspace as its working directory.
+
+```sh
+desk enter 7e4a9b23c810
+```
+
+```text
+desk: entering experiment (7e4a9b23c810); exit to return; nothing is deleted
+```
+
+Use `--no-enter` with `scratch` or `open` to create a workspace without starting a shell, for example in scripts. The ID is printed on standard output either way.
+
+## Inside a Session
+
+The subshell inherits your environment, plus one variable:
+
+<ParamField name="DESK_WORKSPACE" type="string">
+The ID of the workspace this shell belongs to. Use it in your prompt to see when you are inside desk.
+</ParamField>
+
+For example, in zsh:
+
+```sh
+PROMPT='${DESK_WORKSPACE:+[desk] }%~ %# '
+```
+
+You can run several sessions in the same workspace at once.
+
+## Leaving
+
+Type `exit` or press `Ctrl-D`. You return to the shell you started from, in its original directory.
+
+<Callout type="success">
+Exiting never deletes, moves, or marks anything. Cleanup is always a separate command.
+</Callout>
+
+If the subshell exits with a non-zero status, desk exits with the same status.
+
+## Session Locks
+
+While a session is running, desk holds a lock on the workspace, and the shell and its child processes inherit it. Any workspace with an active lock is retained by cleanup.
+
+Locks cannot see everything. An editor opened from a different terminal, a detached server, or a shell that outlived a killed desk process may still be using the directory. That is why every command that moves or deletes a workspace requires `--quiescent`:
+
+<ParamField name="--quiescent" type="flag">
+Your confirmation that you have stopped every process using the affected workspaces: shells, editors, servers, and background jobs.
+</ParamField>
+
+desk cannot verify this for other applications. Do not run cleanup while something else is writing to a workspace.

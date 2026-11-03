@@ -1,0 +1,50 @@
+---
+title: Overview
+description: Every desk command at a glance, and the conventions they share.
+---
+
+## Usage
+
+```text title="Usage"
+desk COMMAND [ARGUMENTS] [FLAGS]
+```
+
+| Command | Purpose |
+| --- | --- |
+| [`desk scratch [NAME]`](/commands/scratch/) | Create an empty workspace and enter it |
+| [`desk open REPOSITORY`](/commands/open/) | Clone a repository into a workspace, or resume it |
+| [`desk enter ID`](/commands/enter/) | Start a shell in an existing workspace |
+| [`desk list`](/commands/list/) | Show every workspace with its state and retention reason |
+| [`desk keep ID`](/commands/keep/) | Pin or unpin a workspace |
+| [`desk done ID`](/commands/done/) | Mark a workspace as a cleanup candidate |
+| [`desk gc`](/commands/gc/) | Preview or apply cleanup of finished workspaces |
+| [`desk remove ID`](/commands/remove/) | Quarantine one workspace |
+| [`desk restore ID`](/commands/restore/) | Bring a workspace back from quarantine |
+| [`desk purge ID`](/commands/purge/) | Permanently delete a quarantined workspace |
+| [`desk version`](/commands/version/) | Print the version |
+
+`desk help`, `desk --help`, or `desk` with no arguments prints a summary.
+
+## Conventions
+
+<ParamField name="ID" type="12 hex characters">
+Workspaces are addressed by the full ID shown in `desk list`. Names and prefixes are not accepted.
+</ParamField>
+<ParamField name="Flags" type="anywhere">
+Flags may appear before or after arguments. Each command accepts only its own flags; anything else is an error.
+</ParamField>
+<ParamField name="--quiescent" type="flag">
+Required by every command that moves or deletes a workspace: `remove`, `purge`, and `gc --apply`. It confirms that no process is using the affected workspaces.
+</ParamField>
+
+There is no force flag, no interactive confirmation, and no command that bypasses the [retention rules](/docs/retention-rules/).
+
+## Output and Exit Status
+
+Results go to standard output, one line per item, so they are easy to read and to script. Errors are printed to standard error with a `desk:` prefix, and desk exits with status `1`:
+
+```text
+desk: unknown workspace "abc" (use desk list)
+```
+
+When a desk session ends because the shell exited with a non-zero status, desk exits with that same status.
