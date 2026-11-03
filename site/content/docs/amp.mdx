@@ -1,60 +1,38 @@
 ---
 title: Test Amp work locally
-description: Copy an Amp task to edit locally, or follow live changes in a fresh clone without pushing.
+description: Copy an orb's work to edit locally, or follow live changes without pushing.
 ---
 
-## Choose a task
-
-Install Git and the Amp CLI, and sign in to Amp first. Then run:
+Requires Git and an installed, authenticated [Amp CLI](https://ampcode.com). Run `desk amp` to browse recent tasks, or pass a thread URL or ID:
 
 ```sh
-desk amp
+desk amp THREAD --copy      # keep an editable snapshot
+desk amp THREAD --follow    # watch live changes in the foreground
 ```
 
-Browse recent tasks, or paste a thread URL or ID directly:
+Omit the mode to choose interactively. Both modes create a fresh independent clone and include uncommitted and unpushed code. If the thread's repository metadata is missing or insufficient, add `--repository owner/repo`.
 
-```sh
-desk amp THREAD
-```
+## Copy to edit
 
-desk asks whether to **copy** or **follow** when you omit a mode. It creates a fresh independent clone using the thread's repository metadata. If that metadata is missing or insufficient, supply a repository explicitly:
+Copy uses `amp sync --apply`. The snapshot stays in the local workspace for you to inspect, run, and change with your usual tools.
 
-```sh
-desk amp THREAD --copy \
-  --repository owner/repo
-```
+## Follow to test
 
-`THREAD` stands for your actual URL or thread ID, not a workspace name. See the [command reference](/commands/amp/).
-
-## Keep a copy to edit
-
-```sh
-desk amp THREAD --copy
-```
-
-Copy delegates to `amp sync --apply` to bring the task's code into the fresh workspace. It includes uncommitted and unpushed work; you don't need to commit or push in the orb first. The snapshot stays locally for you to inspect, run, and edit with your usual tools.
-
-## Follow while the agent works
-
-```sh
-desk amp THREAD --follow
-```
-
-Follow delegates to Amp's live sync and stays in the foreground. Leave that terminal running. In a **separate terminal**, find the new workspace and enter it:
+Leave follow running. In a **separate terminal**, find and enter the new workspace:
 
 ```sh
 desk list
 desk switch NAME
 ```
 
-Replace `NAME` with the generated workspace name. Run the project's setup and tests there as updates arrive.
+Run the project's setup and tests as updates arrive. Live follow prevents cleanup.
 
 <Callout type="warning">
-Don't edit locally while following: live updates own the checkout. Stop follow in its original terminal when you're done. Stopping restores the pre-sync checkout, not an editable copy of the latest synced work. Use copy mode if you want to keep and change the task's files.
+Don't edit locally while following: live updates own the checkout. Stopping follow restores the pre-sync checkout, not the latest synced files. Use copy mode to keep work you want to edit.
 </Callout>
 
-## Set up the project locally
+## Code, not an environment
 
-This transfers code, not an environment. Dependencies, running services, toolchains, and secrets are not replicated. Install and configure what the project requires before testing. Your installed Git handles clone authentication with your usual credentials.
+Dependencies, services, toolchains, and secrets are not replicated. Run the project's usual setup locally. Cloning uses your normal Git credentials.
 
-Live follow prevents [cleanup](/docs/cleanup/). When a workspace is no longer useful, mark it with `desk finish` or remove it explicitly with `desk rm` after reviewing its contents.
+When finished, use `desk finish` or explicitly remove the workspace with `desk rm`. See the [command reference](/commands/amp/) and [cleanup](/docs/cleanup/).

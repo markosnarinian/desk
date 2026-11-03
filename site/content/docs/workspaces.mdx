@@ -3,7 +3,7 @@ title: Workspaces
 description: What a workspace is, how it's named, and where it lives.
 ---
 
-## Two Kinds
+## Two kinds
 
 | Kind | Created by | Contents |
 | --- | --- | --- |
@@ -18,7 +18,7 @@ Every new workspace gets a random two-word name, such as `drifting-tundra` or `m
 
 Commands accept a unique prefix: `desk switch dri` works as long as no other workspace starts with `dri`. Leave the name out entirely and desk uses the workspace containing your current directory, even from deep inside it.
 
-## Where Workspaces Live
+## Where workspaces live
 
 ```text
 ~/.desk/workspaces/
@@ -30,8 +30,4 @@ These are plain directories. A repository workspace's source is its Git `origin`
 
 ## Lifetime
 
-Use [`desk finish`](/commands/finish/) to mark a workspace disposable without removing it immediately. Scratch workspaces without a remote need this explicit signal before cleanup can consider them.
-
-[`desk cleanup`](/commands/cleanup/) previews managed workspaces inactive for at least 72 hours, with no local-only work or detectable running processes, then asks before removal. [`desk rm`](/commands/rm/) removes one explicitly after confirmation, even if it has local-only work.
-
-Both move workspaces to garbage for 72 hours from removal. Every desk invocation silently collects expired garbage; there is no daemon. See [cleanup and retention](/docs/cleanup/) for safety checks and activity limits.
+[`desk finish`](/commands/finish/) marks work disposable; [`desk cleanup`](/commands/cleanup/) removes eligible inactive workspaces; [`desk rm`](/commands/rm/) removes one explicitly after confirmation. See [cleanup and retention](/docs/cleanup/) for the safety checks and 72-hour garbage window.

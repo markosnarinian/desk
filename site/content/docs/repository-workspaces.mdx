@@ -1,80 +1,39 @@
 ---
 title: Repository workspaces
-description: Clone a repository into its own workspace and return to it later.
+description: Clone a repository or return to an existing workspace without naming a task first.
 ---
 
-## Clone a Repository
-
-`desk new` accepts several forms of repository:
-
-<Tabs>
-<Tab title="GitHub shorthand">
+## Choose a source
 
 ```sh
-desk new octocat/Hello-World
+desk new owner/repo                             # GitHub shorthand
+desk new https://gitlab.com/group/project.git    # any Git URL
+desk new git@github.com:owner/repo.git            # SSH
+desk new ../my-project                          # local source
 ```
 
-`owner/repo` is expanded to `https://github.com/owner/repo.git`.
+Local paths must start with `/`, `./`, or `../`. desk runs your installed Git with your usual credentials, creates an independent clone, and enters it with [shell integration](/docs/shell-integration/). If cloning fails, it removes the new workspace and reports Git's error.
 
-</Tab>
-<Tab title="URL">
+## Choose a workspace
 
-```sh
-desk new https://gitlab.com/group/project.git
-desk new git@github.com:owner/repo.git
-desk new ssh://git@example.com/repo.git
+By default, `desk new REPOSITORY` offers existing workspaces alongside a new clone.
+
+| Flag | Effect |
+| --- | --- |
+| `--fresh` | Create another independent clone. |
+| `--reuse` | Reuse the most recently used workspace, or create one. Remember this preference for the repository. |
+| `--choose` | Show the chooser once, without changing a remembered preference. |
+
+Use one flag at a time. Returning to a clone never fetches, pulls, or resets it; update it yourself with Git. Use `desk switch NAME` when you already know the workspace.
+
+## How sources match
+
+desk reads each workspace's Git `origin` and compares host and path, ignoring scheme, user, and a trailing `.git`. GitHub paths are case-insensitive, so these identify the same source:
+
+```text
+octocat/Hello-World
+https://github.com/octocat/hello-world
+git@github.com:octocat/Hello-World.git
 ```
 
-URLs are passed to Git as given.
-
-</Tab>
-<Tab title="Local path">
-
-```sh
-desk new ../my-project
-```
-
-Local paths must start with `/`, `./`, or `../`. They are converted to an absolute path.
-
-</Tab>
-</Tabs>
-
-For a new clone, desk runs `git clone` into an independently named workspace and takes you there. Authentication uses your normal Git and SSH configuration. No task name is required.
-
-## Return to It
-
-By default, `desk new REPOSITORY` offers existing workspaces for that repository alongside a new clone. Different spellings identify the same source:
-
-```sh
-desk new octocat/Hello-World
-desk new https://github.com/octocat/hello-world
-desk new git@github.com:octocat/Hello-World.git
-```
-
-desk compares each workspace's Git `origin` by host and path, ignoring the scheme, user, and a trailing `.git`. Path case is ignored on GitHub, where it doesn't matter.
-
-Choose explicitly when you already know what you need:
-
-```sh
-desk new owner/repo --fresh   # independent clone for another experiment
-desk new owner/repo --reuse   # remember reuse-MRU for this repository
-desk new owner/repo --choose  # chooser this time, keep remembered preference
-```
-
-`--reuse` returns to the most recently used workspace for that repository, or creates one if needed. Later unflagged invocations reuse it too. `--fresh` requests a new clone; `--choose` overrides the remembered preference for just this invocation. Use only one of these flags at a time.
-
-desk does **not** fetch, pull, or reset when it returns to a clone. Update it yourself with Git. You can also use `desk switch NAME` directly.
-
-## When a Clone Fails
-
-If `git clone` fails, desk removes the new workspace and reports Git's error. Fix the problem, such as credentials or a typo, and run `desk new` again.
-
-## Before Deleting
-
-For routine clearing, use [cleanup](/docs/cleanup/): it excludes local-only work and active workspaces. `desk rm` is explicit removal: it shows a summary, asks, and moves whatever you confirm to garbage for 72 hours, even local-only work. If you're unsure, check first:
-
-```sh
-git status --short
-git log --branches --not --remotes
-git stash list
-```
+When you're done, use [cleanup](/docs/cleanup/) for safety-checked removal, or `desk rm` to remove a workspace explicitly after confirmation.

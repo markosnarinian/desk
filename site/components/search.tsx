@@ -98,7 +98,7 @@ export function Search({ compact }: { compact?: boolean }) {
                   h="14"
                   pe="12"
                   outline="none"
-                  placeholder="Search docs and commands"
+                  placeholder="Search documentation"
                   value={query}
                   onChange={(e) => {
                     setQuery(e.target.value)
@@ -117,7 +117,7 @@ export function Search({ compact }: { compact?: boolean }) {
             <Dialog.Body p="2" maxH="60vh" overflowY="auto">
               {!query && (
                 <Text p="6" textAlign="center" color="fg.muted" textStyle="sm">
-                  Try “prompt”, “DESK_HOME”, or “desk cd”.
+                  Try “prompt”, “DESK_HOME”, or “desk switch”.
                 </Text>
               )}
               {query && !results.length && (

@@ -1,46 +1,33 @@
 ---
 title: Introduction
-description: Workspaces for local exploration, experimentation, and prototyping.
+description: A workspace manager for local development.
 ---
 
-## Why desk?
+As agents move more programming work to the cloud, local work becomes occasional and fragmented: temporary repository clones, playgrounds, exploration, experiments, throwaway scaffolding, and local prototypes.
 
-As agents take more programming work to the cloud, local work becomes more occasional and fragmented: a temporary clone to explore, a playground to test a library, a throwaway scaffold, a local prototype.
+desk makes those workspaces easy to create, return to, and retire. Use your usual tools locally, or [bring Amp orb work home](/docs/amp/) to edit a snapshot or test live changes without pushing first.
 
-Agents get cloud machines they can spin up and tear down. desk gives humans a similar start and finish for local work: create a workspace, explore with your usual tools, return when needed, and remove it when you're done.
+## A short session
 
-## When to use it
+With desk's shell integration and Node.js installed:
 
-- **Build a playground.** Test a library, generate a throwaway scaffold, or prototype an idea in an empty workspace.
-- **Explore a repository.** Clone it to read the code, debug, or try a change. Keep the workspace only as long as you need it.
-- **Bring agent work home.** Copy an Amp task to edit locally, or follow it live to test as it changes. No push required.
-
-```sh
-desk new                  # start an experiment
-desk new owner/repo       # choose a workspace or a new clone
-desk list                 # see what you've kept
-desk switch misty         # return by name or unique prefix
-desk info                 # inspect the current workspace
-desk amp                  # browse recent Amp tasks
-desk finish               # mark a workspace disposable
-desk cleanup              # preview eligible workspaces, then confirm
+```text title="Terminal"
+$ desk new
+desk: created misty-ember
+(misty-ember) $ printf 'console.log(2 ** 10)\n' > try.js
+(misty-ember) $ node try.js
+1024
+(misty-ember) $ desk rm
+Delete misty-ember (has files)? [y/N] y
+Moved to garbage for 72 hours.
 ```
+
+Names are generated; no task name is needed. `desk new owner/repo` starts from a Git clone instead. `desk list` shows what you've kept; `desk switch NAME` takes you back.
 
 ## Start here
 
-<CardGroup cols={2}>
-<Card title="Installation" icon="download" href="/docs/installation/">
-Build desk and run automatic shell setup.
-</Card>
-<Card title="Quickstart" icon="rocket" href="/docs/quickstart/">
-Try a script, work on a repo, or bring an Amp task home.
-</Card>
-</CardGroup>
+[Install desk](/docs/installation/), then follow the [Quickstart](/docs/quickstart/). Browse [Commands](/commands/overview/) for syntax and flags.
 
-## What it does today
+desk runs on macOS and Linux, with zsh (including Oh My Zsh), bash, and fish integration. Workspaces are plain directories, not containers or VMs: dependencies, services, and secrets remain yours to set up.
 
-desk manages plain directories, not virtual machines or containers. It doesn't install dependencies or replicate services and secrets. [Amp sync](/docs/amp/) transfers code; you run the project's usual setup locally.
-
-You decide when to run [cleanup](/docs/cleanup/). It only removes eligible, inactive workspaces with no local-only work, after confirmation. Removed workspaces stay in garbage for 72 hours; every desk invocation silently collects expired garbage. There is no daemon.
-
-It runs on macOS and Linux, with zsh (including Oh My Zsh), bash, and fish integration. It's early; installation is from source. Licensed under GNU AGPL v3.
+[Cleanup](/docs/cleanup/) is explicit and checks for local-only work. Removed workspaces stay in garbage for 72 hours before a later desk invocation permanently deletes them. There is no daemon. Licensed under GNU AGPL v3.

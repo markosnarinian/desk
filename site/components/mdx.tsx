@@ -2,16 +2,11 @@ import {
   Alert,
   Badge,
   Box,
-  Card as ChakraCard,
   Center,
   Code,
   Flex,
   HStack,
-  Icon,
   Link,
-  LinkBox,
-  LinkOverlay,
-  SimpleGrid,
   Tabs as ChakraTabs,
   Text,
 } from "@chakra-ui/react"
@@ -19,7 +14,6 @@ import type { MDXComponents } from "mdx/types"
 import NextLink from "next/link"
 import { Children, cloneElement, isValidElement, type ComponentProps, type ReactElement, type ReactNode } from "react"
 import { CopyButton } from "./copy-button"
-import { iconFor } from "./icons"
 
 const status = { info: "info", tip: "success", success: "success", warning: "warning", danger: "error" } as const
 
@@ -32,49 +26,6 @@ export function Callout({ type = "info", title, children }: { type?: keyof typeo
         <Alert.Description>{children}</Alert.Description>
       </Alert.Content>
     </Alert.Root>
-  )
-}
-
-export function CardGroup({ cols = 2, children }: { cols?: number; children: ReactNode }) {
-  return (
-    <SimpleGrid className="not-prose" columns={{ base: 1, md: cols }} gap="4" my="6">
-      {children}
-    </SimpleGrid>
-  )
-}
-
-export function Card({ title, icon, href, children }: { title: string; icon?: string; href?: string; children?: ReactNode }) {
-  const IconComponent = icon ? iconFor(icon) : undefined
-  return (
-    <LinkBox asChild>
-      <ChakraCard.Root
-        size="sm"
-        variant="outline"
-        className="not-prose"
-        transition="border-color 0.15s, box-shadow 0.15s"
-        _hover={href ? { borderColor: "teal.solid", shadow: "sm" } : undefined}
-      >
-        <ChakraCard.Body gap="2">
-          {IconComponent && (
-            <Icon boxSize="5" color="teal.fg" mb="2">
-              <IconComponent />
-            </Icon>
-          )}
-          <ChakraCard.Title textStyle="sm" fontWeight="semibold">
-            {href ? (
-              <LinkOverlay asChild>
-                <NextLink href={href}>{title}</NextLink>
-              </LinkOverlay>
-            ) : (
-              title
-            )}
-          </ChakraCard.Title>
-          <ChakraCard.Description as="div" css={{ "& p": { my: 0 } }}>
-            {children}
-          </ChakraCard.Description>
-        </ChakraCard.Body>
-      </ChakraCard.Root>
-    </LinkBox>
   )
 }
 
@@ -226,8 +177,6 @@ function heading(Tag: "h2" | "h3") {
 
 export const mdxComponents: MDXComponents = {
   Callout,
-  Card,
-  CardGroup,
   Steps,
   Step,
   ParamField,

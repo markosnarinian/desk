@@ -1,77 +1,46 @@
 ---
 title: Quickstart
-description: Create a playground, explore a clone, or test an Amp task locally.
+description: Create a workspace, return to it, and clear it away.
 ---
 
-First [install desk](/docs/installation/), run `desk init`, and open a new terminal.
+[Install desk](/docs/installation/), run `desk init`, and open a new terminal.
 
-Use an empty workspace for a playground, throwaway scaffold, or prototype. Use a repository workspace when you need a local clone. You don't need a task name to start.
-
-## Try a small script
-
-With Node.js installed:
+## Start an experiment
 
 ```sh
 desk new
-printf 'console.log(2 ** 10)\n' \
-  > try.js
-node try.js
 ```
 
-The script prints `1024`. Your prompt shows a name such as `(misty-ember)`. All files from this experiment live in that workspace.
+Your shell enters an empty directory; the prompt shows its generated name, such as `(misty-ember)`. Use your usual tools to try a library, scaffold a project, or build a prototype.
 
-When you're done:
-
-```sh
-desk rm
-```
-
-Confirm with `y`. desk moves the workspace to garbage for 72 hours and takes you home. Expired garbage is silently collected whenever you run desk.
-
-## Work on a repository
-
-For a runnable public example:
+For a repository instead:
 
 ```sh
 desk new octocat/Hello-World
-git status
-ls
 ```
 
-Use your own `owner/repo` for real work. If you have workspaces for it, desk offers them alongside a new clone. Use `desk new owner/repo --fresh` for an independent clone, or `--reuse` to remember a preference for the most recently used workspace for that repo. `--choose` opens the chooser for one invocation without changing that preference. desk does not pull or reset existing clones.
+desk offers existing workspaces for that repository or a new independent clone. It never pulls or resets an existing clone. See [repository workspaces](/docs/repository-workspaces/) for reuse options.
 
-To find a workspace and return by name:
+## Return later
 
 ```sh
-desk list
-desk switch misty
-desk info
+desk list                  # find the generated name
+desk switch misty          # name or unique prefix
+desk info                  # name, path, and source
+desk rename local-test     # optional: give it a useful name
 ```
 
-Names are random; `misty` is an example. From any subdirectory, `desk switch` with no name returns to the workspace root.
+From a subdirectory, `desk switch` without a name returns to the workspace root.
 
-## Bring an Amp task home
-
-With Git and an installed, authenticated Amp CLI, run:
+## Finish
 
 ```sh
-desk amp
+desk finish                # mark the current workspace disposable
+desk cleanup               # preview eligible workspaces, then confirm
 ```
 
-Choose a recent task, or pass its thread URL or ID as `desk amp THREAD`. Choose **copy** to keep an editable snapshot or **follow** to watch live changes. Both create a fresh clone and include uncommitted and unpushed work without pushing.
+Cleanup considers managed workspaces inactive for at least 72 hours, excluding local-only work and detectable running processes. Scratch workspaces without a remote require `finish` first; it never bypasses Git safety checks.
 
-Follow stays in the foreground. In a separate terminal, use `desk list` and `desk switch NAME` to test; don't edit locally while following. Stopping follow restores the pre-sync checkout. Run the project's usual setup yourself: dependencies, services, and secrets aren't replicated. See the [Amp guide](/docs/amp/) for repository fallback and explicit modes.
+Need it gone now? `desk rm [NAME]` asks before removing even local-only work. Both removal commands retain garbage for 72 hours, then any desk invocation may permanently delete it. See [cleanup and retention](/docs/cleanup/).
 
-## Clear away finished work
-
-Give a workspace a useful name when one emerges, then mark it disposable when you're done:
-
-```sh
-desk rename local-test
-desk finish
-desk cleanup
-```
-
-`finish` doesn't remove anything immediately. Cleanup previews managed workspaces inactive for at least 72 hours, excludes local-only work and detectable running processes, and asks before removing all candidates. Scratch workspaces without a remote require `finish` first. `desk cleanup --yes` uses the same safety checks without a prompt.
-
-Need it gone now? `desk rm [NAME]` asks, then moves even local-only work to garbage. See [cleanup and retention](/docs/cleanup/) before clearing away anything important.
+To test an agent's work, use `desk amp`: choose **copy** for an editable snapshot or **follow** for live updates. Read [Test Amp work locally](/docs/amp/) before following; stopping restores the pre-sync checkout.

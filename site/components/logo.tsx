@@ -5,7 +5,7 @@ import { LuTerminal } from "react-icons/lu"
 export function Logo() {
   return (
     <HStack asChild gap="2">
-      <NextLink href="/" aria-label="desk home">
+      <NextLink href="/" aria-label="desk documentation">
         <Center boxSize="8" rounded="lg" bg="teal.solid" color="teal.contrast">
           <LuTerminal aria-hidden />
         </Center>

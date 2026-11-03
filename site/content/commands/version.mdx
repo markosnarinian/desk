@@ -1,32 +1,10 @@
 ---
 title: desk version
-description: Print the version of the desk binary.
+description: Print the installed binary's version.
 ---
 
-## Usage
-
-```text title="Usage"
-desk version
-```
-
-`version` takes no arguments or flags.
-
-## Output
-
-Release builds print the version they were built with, such as `v0.1.0`. Builds made directly with `go build` print `dev`.
-
 ```sh
 desk version
 ```
 
-```text
-dev
-```
-
-## Setting the Version
-
-`scripts/release.sh` sets the version at build time with Go's linker flags:
-
-```sh
-go build -ldflags "-X main.version=v0.1.0" -o desk .
-```
+Takes no arguments or flags. Release binaries print their tag, such as `v0.1.0`; direct source builds print `dev`. Go installs report the module version. The release script sets the version with Go's linker flags.

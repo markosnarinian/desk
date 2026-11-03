@@ -119,7 +119,7 @@ export function getSearchEntries(): SearchEntry[] {
   for (const p of pages) {
     const { title, description, body } = read(p.section, p.slug)
     const base = `/${p.section}/${p.slug}/`
-    const section = p.section === "docs" ? "Documentation" : "Commands"
+    const section = p.group
     const slugger = new GithubSlugger()
     let current: SearchEntry = { href: base, page: title, section, text: description }
     entries.push(current)

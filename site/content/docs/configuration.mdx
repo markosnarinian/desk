@@ -1,40 +1,34 @@
 ---
 title: Configuration
-description: Where desk stores workspaces, and the environment variables it reads.
+description: Storage, environment variables, and Git configuration.
 ---
 
 ## Data root
 
-desk keeps its data under `~/.desk`, outside your project files:
+desk stores data under `~/.desk`, outside project files:
 
 | Path | Contents |
 | --- | --- |
 | `workspaces/` | Scratch directories and independent Git clones |
-| `state/NAME.json` | Workspace activity and lifecycle metadata |
-| `preferences.json` | Per-repository reuse preferences |
-| `garbage/` | Removed workspaces retained for 72 hours from removal |
+| `state/NAME.json` | Activity and lifecycle metadata |
+| `preferences.json` | Per-repository reuse preferences set by `desk new --reuse` |
+| `garbage/` | Removed workspaces, retained for 72 hours |
 
-`desk new REPOSITORY --reuse` remembers a preference for the most recently used workspace for that repository. `--choose` overrides it for one invocation. You don't need to edit the preferences file yourself. There is no daemon; expired garbage is silently collected by every desk invocation.
+Use desk commands to keep metadata consistent. There is no daemon; every invocation collects expired garbage. Avoid OS-managed temporary storage such as `/tmp` for work you want to return to.
 
-## Environment Variables
+## Environment variables
 
-<ParamField name="DESK_HOME" type="absolute path" default="~/.desk">
-Overrides the entire data root, including workspaces, state, preferences, and garbage. Must be an absolute path. Changing it does not move existing data.
-</ParamField>
-<ParamField name="DESK_PROMPT_DISABLE" type="any value">
-Stops [shell integration](/docs/shell-integration/) from changing your prompt.
-</ParamField>
-
-Don't keep work you want to return to in OS-managed temporary storage such as `/tmp`.
+| Variable | Effect |
+| --- | --- |
+| `DESK_HOME` | Override the entire data root. Must be an absolute path; changing it does not move existing data. |
+| `DESK_PROMPT_DISABLE` | Set before loading shell integration to disable the workspace prompt prefix. |
 
 ## Git
 
-desk runs your installed `git` with your normal configuration, credentials, and SSH setup. It ignores inherited `GIT_DIR`, `GIT_WORK_TREE`, and `GIT_INDEX_FILE`, so running it from a Git hook can't point it at a different repository.
+desk uses your installed Git with your normal configuration, credentials, and SSH setup. It ignores inherited `GIT_DIR`, `GIT_WORK_TREE`, and `GIT_INDEX_FILE`, so Git hooks can't redirect its repository operations.
 
-## Earlier Versions
+## Pre-release data
 
-Earlier versions kept a registry, locks, and quarantine in the data root and named workspaces with 12-character IDs. These are not the current `state/` and `garbage/` layout. Old workspaces can still appear under their IDs; use `desk rename` when you want a more useful name. Cleanup considers only managed workspaces, not arbitrary directories.
+Old workspace directories remain usable, including those with 12-character IDs; `desk rename` can give them readable names. Directories without state remain outside cleanup until explicitly used through `switch`, selected with `new`, or marked with `finish`.
 
-An existing workspace without state is not a cleanup candidate until you explicitly enter it through `desk switch`, select it with `desk new`, or mark it with `desk finish`. This starts managed state; listing alone does not.
-
-Platform-specific roots from before `~/.desk` became the default (`~/.local/share/desk` on Linux, `~/Library/Application Support/desk` on macOS) are not read. Set `DESK_HOME` to an old root, or move its `workspaces/` directory into `~/.desk`.
+Older platform-specific roots (`~/.local/share/desk` on Linux and `~/Library/Application Support/desk` on macOS) are not read automatically. Set `DESK_HOME` to the old root or move its `workspaces/` directory into `~/.desk`. Old registry, lock, and quarantine files are not used.

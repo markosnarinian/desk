@@ -1,11 +1,11 @@
 "use client"
 
-import { Badge, Box, Button, CloseButton, Drawer, Flex, HStack, IconButton, Link, Portal, Stack } from "@chakra-ui/react"
+import { Box, Button, CloseButton, Drawer, Flex, HStack, IconButton, Link, Portal, Stack, Text } from "@chakra-ui/react"
 import NextLink from "next/link"
 import { usePathname } from "next/navigation"
 import { useEffect, useState } from "react"
 import { LuGithub, LuMenu } from "react-icons/lu"
-import { href, sectionHome, sections } from "@/lib/nav"
+import { groups, href } from "@/lib/nav"
 import { iconFor } from "./icons"
 import { Logo } from "./logo"
 import { Search } from "./search"
@@ -15,17 +15,12 @@ export const githubUrl = "https://github.com/markosnarinian/desk"
 
 const trim = (path: string) => path.replace(/\/$/, "")
 
-function useSection() {
-  const pathname = usePathname()
-  return sections.find((s) => pathname.startsWith(`/${s.id}/`)) ?? sections[0]
-}
-
 function SidebarNav() {
-  const pathname = trim(usePathname())
-  const section = useSection()
+  const path = usePathname()
+  const pathname = trim(path === "/" ? "/docs/introduction/" : path)
   return (
-    <Stack as="nav" aria-label={section.label} gap="6">
-      {section.groups.map((group) => {
+    <Stack as="nav" aria-label="Documentation" gap="5">
+      {groups.map((group) => {
         const Icon = iconFor(group.icon)
         return (
           <Stack key={group.label} gap="0.5">
@@ -34,13 +29,14 @@ function SidebarNav() {
               {group.label}
             </HStack>
             {group.items.map((item) => {
-              const to = href(section.id, item.slug)
+              const to = href(item.section, item.slug)
               const current = pathname === trim(to)
               return (
                 <Link
                   key={item.slug}
                   asChild
                   px="3"
+                  ps={item.section === "commands" && item.slug !== "overview" ? "7" : "3"}
                   py="1.5"
                   rounded="md"
                   textStyle="sm"
@@ -51,11 +47,6 @@ function SidebarNav() {
                   _hover={current ? undefined : { color: "fg", bg: "bg.muted" }}
                 >
                   <NextLink href={to} aria-current={current ? "page" : undefined}>
-                    {item.badge && (
-                      <Badge size="xs" colorPalette={item.badge.color} fontFamily="mono" minW="12" justifyContent="center">
-                        {item.badge.text}
-                      </Badge>
-                    )}
                     {item.label}
                   </NextLink>
                 </Link>
@@ -68,37 +59,9 @@ function SidebarNav() {
   )
 }
 
-function SectionTabs() {
-  const section = useSection()
-  return (
-    <HStack as="nav" aria-label="Sections" gap="6" h="full" hideBelow="lg">
-      {sections.map((s) => {
-        const current = s.id === section.id
-        return (
-          <Link
-            key={s.id}
-            asChild
-            h="full"
-            textStyle="sm"
-            fontWeight="medium"
-            textDecoration="none"
-            color={current ? "teal.fg" : "fg.muted"}
-            borderBottomWidth="2px"
-            borderColor={current ? "teal.solid" : "transparent"}
-            _hover={current ? undefined : { color: "fg" }}
-          >
-            <NextLink href={sectionHome(s.id)}>{s.label}</NextLink>
-          </Link>
-        )
-      })}
-    </HStack>
-  )
-}
-
 function MobileNav() {
   const [open, setOpen] = useState(false)
   const pathname = usePathname()
-  const current = useSection()
   useEffect(() => setOpen(false), [pathname])
   return (
     <Drawer.Root open={open} onOpenChange={(e) => setOpen(e.open)} placement="start" size="xs">
@@ -119,13 +82,6 @@ function MobileNav() {
               </Drawer.Title>
             </Drawer.Header>
             <Drawer.Body>
-              <HStack mb="6" gap="2">
-                {sections.map((s) => (
-                  <Button key={s.id} asChild size="xs" variant={s.id === current.id ? "subtle" : "ghost"} colorPalette="teal">
-                    <NextLink href={sectionHome(s.id)}>{s.label}</NextLink>
-                  </Button>
-                ))}
-              </HStack>
               <SidebarNav />
             </Drawer.Body>
             <Drawer.CloseTrigger asChild>
@@ -169,7 +125,7 @@ export function DocsShell({ children }: { children: React.ReactNode }) {
               <MobileNav />
               <Logo />
             </HStack>
-            <SectionTabs />
+            <Text hideBelow="lg" textStyle="sm" color="fg.muted">Documentation</Text>
             <HStack gap="1">
               <Box hideFrom="lg">
                 <Search compact />

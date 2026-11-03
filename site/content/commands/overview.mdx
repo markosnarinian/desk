@@ -1,5 +1,5 @@
 ---
-title: Overview
+title: Commands
 description: Every desk command at a glance, and the conventions they share.
 ---
 
@@ -38,11 +38,9 @@ GitHub `owner/repo`, any Git URL, or a local path that starts with `/`, `./`, or
 
 ## Removal and retention
 
-Cleanup requires managed workspaces inactive for at least 72 hours, without local-only work or detectable running processes/live Amp follow. Scratch workspaces without a remote require `desk finish` first. `--yes` skips only confirmation. Explicit `rm` still asks and can remove local-only work.
+`cleanup` checks eligibility; `rm` removes whatever you confirm. Both retain garbage for 72 hours before any desk invocation can permanently delete it. Read [cleanup and retention](/docs/cleanup/) before discarding work.
 
-Both move workspaces to garbage for 72 hours from removal. Every desk invocation silently collects expired garbage; there is no daemon. See [cleanup and retention](/docs/cleanup/).
-
-## Output and Exit Status
+## Output and exit status
 
 Paths and listings go to standard output. Messages and prompts go to standard error, so `cd "$(desk new)"` works in scripts. Errors print with a `desk:` prefix and exit with status `1`:
 

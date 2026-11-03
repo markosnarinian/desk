@@ -7,10 +7,13 @@ stock Chakra UI v3 and laid out after the Chakra UI Pro Docs Kit template.
 
 - `content/docs/*.mdx` and `content/commands/*.mdx`: page content. Front matter
   holds `title` and `description`.
-- `lib/nav.ts`: sidebar groups, ordering, and command badges. A page appears on
-  the site only when it is listed here.
-- `components/mdx.tsx`: MDX components available in content: `Callout`, `Card`,
-  `CardGroup`, `Steps`/`Step`, `ParamField`, and `Tabs`/`Tab`. A fenced code
+- `lib/nav.ts`: unified sidebar groups and page ordering. Commands sit under
+  Reference; their existing `/commands/*` URLs are preserved. A page appears
+  on the site only when it is listed here.
+- `/` renders the introduction directly, with `/docs/introduction/` as its
+  canonical URL. Both routes use the same content and documentation layout.
+- `components/mdx.tsx`: MDX components available in content: `Callout`,
+  `Steps`/`Step`, `ParamField`, and `Tabs`/`Tab`. A fenced code
   block can take a label, such as ```` ```text title="Usage" ````.
 - `app/search-index.json`: the client-side search index (⌘K), generated at build
   time from the same content.

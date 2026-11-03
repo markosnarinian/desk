@@ -34,26 +34,9 @@ Leave it out for an empty workspace. Otherwise choose or create a workspace for 
 ## Examples
 
 ```sh
-desk new
-```
-
-```text
-desk: created drifting-tundra
-```
-
-```sh
-desk new octocat/Hello-World
-```
-
-```text
-Cloning into '/home/you/.desk/workspaces/misty-ember'...
-desk: created misty-ember
-```
-
-To create another independent clone of the same repository:
-
-```sh
-desk new https://github.com/octocat/hello-world --fresh
+desk new                                    # empty playground
+desk new octocat/Hello-World                 # choose or clone
+desk new octocat/Hello-World --fresh         # another independent clone
 ```
 
 See [repository workspaces](/docs/repository-workspaces/) for repository matching and reuse preferences.
