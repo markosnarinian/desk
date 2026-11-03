@@ -315,6 +315,13 @@ func TestAmpFollowInterruptReturnsPathAndRemovesLease(t *testing.T) {
 func checkAmpInterrupt(t *testing.T, target string) {
 	t.Helper()
 	f := ampTestSetup(t)
+	// Shell PWD can resolve aliases such as macOS's /var -> /private/var.
+	// Exercise that distinction on every platform, not just the macOS runner.
+	root := filepath.Join(t.TempDir(), "linked-root")
+	if err := os.Symlink(filepath.Dir(f.dir), root); err != nil {
+		t.Fatal(err)
+	}
+	f.dir = filepath.Join(root, "workspaces")
 	cmd := exec.Command(os.Args[0], "-test.run=^TestAmpFollowInterruptHelper$")
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	cmd.Env = append(os.Environ(), "AMP_TEST_HELPER=1", "AMP_TEST_DIR="+f.dir, "AMP_TEST_REPO="+f.repo, "AMP_TEST_WAIT=1")
@@ -343,6 +350,15 @@ func checkAmpInterrupt(t *testing.T, target string) {
 	if path == "" {
 		t.Fatal("fake amp did not start")
 	}
+	wantPath := filepath.Join(f.dir, filepath.Base(path))
+	started, err := os.Stat(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	wanted, err := os.Stat(wantPath)
+	if err != nil || !os.SameFile(started, wanted) {
+		t.Fatalf("sync started in %q, want workspace %q: %v", path, wantPath, err)
+	}
 	marker := filepath.Join(filepath.Dir(f.dir), "state", filepath.Base(path)+".follow")
 	b, err := os.ReadFile(marker)
 	if err != nil || string(b) != strconv.Itoa(cmd.Process.Pid) {
@@ -364,8 +380,8 @@ func checkAmpInterrupt(t *testing.T, target string) {
 	select {
 	case err := <-done:
 		b, readErr := os.ReadFile(outFile)
-		if err != nil || readErr != nil || string(b) != path+"\n" {
-			t.Fatalf("interrupted follow: %v out=%q (read: %v) stderr=%s", err, b, readErr, stderr.String())
+		if err != nil || readErr != nil || string(b) != wantPath+"\n" {
+			t.Fatalf("interrupted follow: %v out=%q want=%q (read: %v) stderr=%s", err, b, wantPath+"\n", readErr, stderr.String())
 		}
 	case <-time.After(5 * time.Second):
 		t.Fatal("Ctrl-C did not stop foreground sync")
