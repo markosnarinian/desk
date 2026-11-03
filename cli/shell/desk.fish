@@ -1,14 +1,22 @@
-# desk shell integration for fish. Load with: desk init fish | source
+# desk shell integration for fish. Load with: desk init fish --print | source
 
-function desk --description 'Workspaces for the work in between'
+function desk --description 'workspaces for temporary local work'
     switch "$argv[1]"
-        case new
+        case new amp
             set -l dir (command desk $argv); or return
-            builtin cd -- $dir
-        case cd
-            set -l dir (command desk path $argv[2..-1]); or return
-            builtin cd -- $dir
-        case rm
+            builtin cd -- "$dir"
+        case switch
+            set -l dir (command desk info --path $argv[2..-1]); or return
+            builtin cd -- "$dir"; or return
+            command desk _visit
+        case rename
+            set -l old (command desk info --path 2>/dev/null)
+            set -l relative (string sub -s (math (string length -- "$old") + 1) -- "$PWD")
+            set -l dir (command desk $argv); or return
+            if not test -d "$PWD"
+                builtin cd -- "$dir$relative"
+            end
+        case rm cleanup
             command desk $argv; or return
             test -d $PWD; or builtin cd ~
         case '*'
@@ -52,6 +60,15 @@ if functions -q fish_prompt; and not functions -q _desk_original_fish_prompt
 end
 
 complete -c desk -f
-complete -c desk -n __fish_use_subcommand -a 'new cd path list rm init version help'
-complete -c desk -n '__fish_seen_subcommand_from cd path rm' -a '(for d in (_desk_root)*/; basename $d; end)'
-complete -c desk -n '__fish_seen_subcommand_from init' -a 'zsh bash fish'
+complete -c desk -n __fish_use_subcommand -a 'new amp switch info list rename finish cleanup rm init version help'
+complete -c desk -n '__fish_seen_subcommand_from switch info rm rename finish' -a '(for d in (_desk_root)*/; basename $d; end)'
+complete -c desk -n '__fish_seen_subcommand_from info' -l path -d 'Print only the path'
+complete -c desk -n '__fish_seen_subcommand_from new' -l fresh -d 'Create an independent clone'
+complete -c desk -n '__fish_seen_subcommand_from new' -l choose -d 'Show workspace chooser'
+complete -c desk -n '__fish_seen_subcommand_from new' -l reuse -d 'Remember most-recent reuse'
+complete -c desk -n '__fish_seen_subcommand_from cleanup' -l yes -d 'Skip confirmation, not safety checks'
+complete -c desk -n '__fish_seen_subcommand_from amp' -l copy -d 'Take a one-time copy'
+complete -c desk -n '__fish_seen_subcommand_from amp' -l follow -d 'Follow live orb changes'
+complete -c desk -n '__fish_seen_subcommand_from amp' -l repository -r -d 'Repository to clone'
+complete -c desk -n '__fish_seen_subcommand_from init' -a 'zsh bash fish oh-my-zsh'
+complete -c desk -n '__fish_seen_subcommand_from init' -l print -d 'Print without installing'

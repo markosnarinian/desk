@@ -3,14 +3,23 @@ title: Configuration
 description: Where desk stores workspaces, and the environment variables it reads.
 ---
 
-## No Configuration File
+## Data root
 
-desk has no configuration file and no background process. `~/.config/desk/` is reserved for future configuration; desk does not create or read it today.
+desk keeps its data under `~/.desk`, outside your project files:
+
+| Path | Contents |
+| --- | --- |
+| `workspaces/` | Scratch directories and independent Git clones |
+| `state/NAME.json` | Workspace activity and lifecycle metadata |
+| `preferences.json` | Per-repository reuse preferences |
+| `garbage/` | Removed workspaces retained for 72 hours from removal |
+
+`desk new REPOSITORY --reuse` remembers a preference for the most recently used workspace for that repository. `--choose` overrides it for one invocation. You don't need to edit the preferences file yourself. There is no daemon; expired garbage is silently collected by every desk invocation.
 
 ## Environment Variables
 
 <ParamField name="DESK_HOME" type="absolute path" default="~/.desk">
-Overrides the data root. Workspaces live in its `workspaces/` directory. Must be an absolute path. Changing it does not move existing workspaces.
+Overrides the entire data root, including workspaces, state, preferences, and garbage. Must be an absolute path. Changing it does not move existing data.
 </ParamField>
 <ParamField name="DESK_PROMPT_DISABLE" type="any value">
 Stops [shell integration](/docs/shell-integration/) from changing your prompt.
@@ -24,6 +33,8 @@ desk runs your installed `git` with your normal configuration, credentials, and 
 
 ## Earlier Versions
 
-Earlier versions kept a registry, locks, and quarantine in the data root and named workspaces with 12-character IDs. desk now ignores the registry, locks, and quarantine directory. Old workspaces still appear in `desk list` under their IDs; rename or delete them like any other directory.
+Earlier versions kept a registry, locks, and quarantine in the data root and named workspaces with 12-character IDs. These are not the current `state/` and `garbage/` layout. Old workspaces can still appear under their IDs; use `desk rename` when you want a more useful name. Cleanup considers only managed workspaces, not arbitrary directories.
+
+An existing workspace without state is not a cleanup candidate until you explicitly enter it through `desk switch`, select it with `desk new`, or mark it with `desk finish`. This starts managed state; listing alone does not.
 
 Platform-specific roots from before `~/.desk` became the default (`~/.local/share/desk` on Linux, `~/Library/Application Support/desk` on macOS) are not read. Set `DESK_HOME` to an old root, or move its `workspaces/` directory into `~/.desk`.

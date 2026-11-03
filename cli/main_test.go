@@ -54,17 +54,17 @@ func TestResolveByPrefixAndCurrentDirectory(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	if path, _, err := invoke(t, "", "path", "q"); err != nil || path != filepath.Join(dir, "quiet-dune") {
+	if path, _, err := invoke(t, "", "info", "--path", "q"); err != nil || path != filepath.Join(dir, "quiet-dune") {
 		t.Fatalf("unique prefix: %s %v", path, err)
 	}
-	if _, _, err := invoke(t, "", "path", "misty"); err == nil || !strings.Contains(err.Error(), "misty-ember, misty-river") {
+	if _, _, err := invoke(t, "", "info", "misty", "--path"); err == nil || !strings.Contains(err.Error(), "misty-ember, misty-river") {
 		t.Fatalf("ambiguous prefix accepted: %v", err)
 	}
-	if _, _, err := invoke(t, "", "path"); err == nil {
-		t.Fatal("path without NAME outside a workspace succeeded")
+	if _, _, err := invoke(t, "", "info", "--path"); err == nil {
+		t.Fatal("info without NAME outside a workspace succeeded")
 	}
 	t.Chdir(filepath.Join(dir, "misty-river", "src", "deep"))
-	if path, _, err := invoke(t, "", "path"); err != nil || path != filepath.Join(dir, "misty-river") {
+	if path, _, err := invoke(t, "", "info", "--path"); err != nil || path != filepath.Join(dir, "misty-river") {
 		t.Fatalf("current workspace: %s %v", path, err)
 	}
 	if list, _, _ := invoke(t, "", "list"); !strings.Contains(list, "* misty-river") || strings.Contains(list, "* misty-ember") {
@@ -91,7 +91,7 @@ func TestRemoveAsksFirst(t *testing.T) {
 	}
 }
 
-func TestOpeningARepositoryAgainReusesItsWorkspace(t *testing.T) {
+func TestOpeningARepositoryOffersTasksAndRemembersReuse(t *testing.T) {
 	dir := setup(t)
 	origin := filepath.Join(t.TempDir(), "origin")
 	gitRun(t, ".", "init", "-q", origin)
@@ -101,7 +101,7 @@ func TestOpeningARepositoryAgainReusesItsWorkspace(t *testing.T) {
 		t.Fatal(err)
 	}
 	gitRun(t, first, "commit", "-q", "--allow-empty", "-m", "local work")
-	second, _, err := invoke(t, "", "new", "file://"+origin+"/")
+	second, _, err := invoke(t, "1\n", "new", "file://"+origin+"/")
 	if err != nil || second != first {
 		t.Fatalf("second open made %s, want %s: %v", second, first, err)
 	}
@@ -114,6 +114,30 @@ func TestOpeningARepositoryAgainReusesItsWorkspace(t *testing.T) {
 	}
 	if entries, _ := os.ReadDir(dir); len(entries) != 1 {
 		t.Fatalf("failed clone left a workspace behind: %v", entries)
+	}
+	fresh, _, err := invoke(t, "0\n", "new", origin)
+	if err != nil || fresh == first {
+		t.Fatalf("fresh choice reused %s: %v", fresh, err)
+	}
+	if got := git(fresh, "log", "-1", "--format=%s"); got != "init" {
+		t.Fatalf("fresh clone inherited another task's local changes: %s", got)
+	}
+	if got, _, err := invoke(t, "", "new", origin, "--reuse"); err != nil || got != fresh {
+		t.Fatalf("reuse not most recent: %s %v", got, err)
+	}
+	if got, _, err := invoke(t, "2\n", "new", origin, "--choose"); err != nil || got != first {
+		t.Fatalf("forced chooser: %s %v", got, err)
+	}
+	if got, _, err := invoke(t, "", "new", origin); err != nil || got != first {
+		t.Fatalf("remembered reuse didn't follow last selected task: %s %v", got, err)
+	}
+	third, _, err := invoke(t, "", "new", origin, "--fresh")
+	if err != nil || third == first || third == fresh {
+		t.Fatalf("--fresh didn't override preference: %s %v", third, err)
+	}
+	list, _, err := invoke(t, "", "list")
+	if err != nil || strings.Count(list, origin) != 1 || !strings.Contains(list, filepath.Base(third)) || !strings.Contains(list, filepath.Base(first)) {
+		t.Fatalf("repository grouping: %s %v", list, err)
 	}
 }
 
@@ -135,5 +159,56 @@ func TestSourceKeyIgnoresURLSpelling(t *testing.T) {
 	// Outside GitHub, path case can matter, and local x.git and x are different directories.
 	if sourceKey("https://example.com/A/b") == sourceKey("https://example.com/a/b") || sourceKey("/srv/x.git") == sourceKey("/srv/x") {
 		t.Error("distinct repositories share a key")
+	}
+}
+
+func TestInfoAndListContracts(t *testing.T) {
+	dir := setup(t)
+	path := filepath.Join(dir, "quiet-dune")
+	if err := os.MkdirAll(path, 0700); err != nil {
+		t.Fatal(err)
+	}
+	for _, source := range []string{"scratch", "git@example.com:owner/repo.git"} {
+		if source != "scratch" {
+			gitRun(t, path, "init", "-q")
+			gitRun(t, path, "remote", "add", "origin", source)
+		}
+		want := "Name: quiet-dune\nPath: " + path + "\nSource: " + source
+		if info, stderr, err := invoke(t, "", "info", "quiet"); err != nil || info != want || stderr != "" {
+			t.Fatalf("info = %q, %q, %v; want %q", info, stderr, err, want)
+		}
+		for _, args := range [][]string{{"info", "quiet", "--path"}, {"info", "--path", "quiet"}} {
+			if got, stderr, err := invoke(t, "", args...); err != nil || got != path || stderr != "" || !filepath.IsAbs(got) {
+				t.Fatalf("%v = %q, %q, %v", args, got, stderr, err)
+			}
+		}
+		list, _, err := invoke(t, "", "list")
+		group := "playgrounds"
+		if source != "scratch" {
+			group = sourceKey(source)
+		}
+		if err != nil || !strings.HasPrefix(list, group+"\n") || !strings.Contains(list, "quiet-dune") || !strings.Contains(list, path) {
+			t.Fatalf("list groups = %q: %v", list, err)
+		}
+		t.Chdir(path)
+		if got, _, err := invoke(t, "", "info"); err != nil || got != want {
+			t.Fatalf("current info = %q %v", got, err)
+		}
+	}
+}
+
+func TestCommandFailures(t *testing.T) {
+	setup(t)
+	for _, args := range [][]string{{"cd"}, {"path"}, {"info"}, {"info", "missing"}, {"info", "a", "b"}, {"info", "--bad"}, {"info", "--path", "--path"}, {"info", "a", "--path", "b"}, {"new", "--fresh"}, {"new", "o/r", "--bad"}, {"new", "--fresh", "--reuse"}, {"cleanup", "--force"}, {"rename"}, {"finish", "missing"}} {
+		if out, _, err := invoke(t, "", args...); err == nil || out != "" {
+			t.Fatalf("%v: stdout %q, error %v", args, out, err)
+		}
+	}
+	if out, _, err := invoke(t, "", "switch", "missing"); out != "" || err == nil || !strings.Contains(err.Error(), "desk init") || !strings.Contains(err.Error(), "new terminal") {
+		t.Fatalf("switch without integration: %q %v", out, err)
+	}
+	t.Setenv("DESK_HOME", "relative")
+	if _, _, err := invoke(t, "", "info", "--path"); err == nil || !strings.Contains(err.Error(), "absolute") {
+		t.Fatalf("relative DESK_HOME accepted: %v", err)
 	}
 }

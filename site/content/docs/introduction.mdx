@@ -1,48 +1,46 @@
 ---
 title: Introduction
-description: desk is a small command-line tool that gives quick experiments and one-off clones a named home, out of your way.
+description: Workspaces for local exploration, experimentation, and prototyping.
 ---
 
-## What is desk?
+## Why desk?
 
-Most local work is planned: your main projects live where you put them. The rest is not. You try a library in an empty folder, clone a repository to check one thing, fix a typo in a project you do not usually work on. Those directories pile up as `test-2`, `tmp-fix`, and a third clone of the same repo.
+As agents take more programming work to the cloud, local work becomes more occasional and fragmented: a temporary clone to explore, a playground to test a library, a throwaway scaffold, a local prototype.
 
-**desk** gives that in-between work a home. `desk new` creates a workspace with a memorable name such as `misty-ember` and takes you there. Your prompt shows which workspace you're in, `desk cd` jumps between them, and `desk rm` deletes one when you're done.
+Agents get cloud machines they can spin up and tear down. desk gives humans a similar start and finish for local work: create a workspace, explore with your usual tools, return when needed, and remove it when you're done.
 
-## Quick Start
+## When to use it
 
-<CardGroup cols={3}>
-<Card title="Installation" icon="download" href="/docs/installation/">
-Build the desk binary and add shell integration.
-</Card>
-<Card title="Quickstart" icon="rocket" href="/docs/quickstart/">
-Create, move between, and delete workspaces in two minutes.
-</Card>
-<Card title="Commands" icon="terminal" href="/commands/overview/">
-Six commands, each on one page.
-</Card>
-</CardGroup>
+- **Build a playground.** Test a library, generate a throwaway scaffold, or prototype an idea in an empty workspace.
+- **Explore a repository.** Clone it to read the code, debug, or try a change. Keep the workspace only as long as you need it.
+- **Bring agent work home.** Copy an Amp task to edit locally, or follow it live to test as it changes. No push required.
 
-## Core Ideas
+```sh
+desk new                  # start an experiment
+desk new owner/repo       # choose a workspace or a new clone
+desk list                 # see what you've kept
+desk switch misty         # return by name or unique prefix
+desk info                 # inspect the current workspace
+desk amp                  # browse recent Amp tasks
+desk finish               # mark a workspace disposable
+desk cleanup              # preview eligible workspaces, then confirm
+```
+
+## Start here
 
 <CardGroup cols={2}>
-<Card title="Workspaces" icon="scratch" href="/docs/workspaces/">
-Plain directories with two-word names: empty, or a Git clone.
+<Card title="Installation" icon="download" href="/docs/installation/">
+Build desk and run automatic shell setup.
 </Card>
-<Card title="Shell integration" icon="terminal" href="/docs/shell-integration/">
-`desk cd`, a prompt that shows where you are, and completion for zsh, bash, and fish.
+<Card title="Quickstart" icon="rocket" href="/docs/quickstart/">
+Try a script, work on a repo, or bring an Amp task home.
 </Card>
 </CardGroup>
 
-## What desk Is Not
+## What it does today
 
-desk manages **directories**, not development environments. It does not install toolchains, run containers, or sync anything. It also deliberately leaves out, for now:
+desk manages plain directories, not virtual machines or containers. It doesn't install dependencies or replicate services and secrets. [Amp sync](/docs/amp/) transfers code; you run the project's usual setup locally.
 
-- automatic cleanup, and anything that runs in the background;
-- `git pull` or resets when you return to a repository;
-- editor and Amp integrations;
-- Windows support.
+You decide when to run [cleanup](/docs/cleanup/). It only removes eligible, inactive workspaces with no local-only work, after confirmation. Removed workspaces stay in garbage for 72 hours; every desk invocation silently collects expired garbage. There is no daemon.
 
-<Callout type="info">
-desk is early and deliberately minimal. It runs on macOS and Linux, and it is installed by building from source.
-</Callout>
+It runs on macOS and Linux, with zsh (including Oh My Zsh), bash, and fish integration. It's early; installation is from source. Licensed under GNU AGPL v3.

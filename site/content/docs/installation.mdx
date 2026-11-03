@@ -8,8 +8,11 @@ description: Build desk from source and put it on your PATH on macOS or Linux.
 - **macOS or Linux**, on amd64 or arm64.
 - **Go 1.24 or newer**, to build the binary. desk has no Go dependencies outside the standard library.
 - **Git**, to use repository workspaces. Scratch workspaces do not need it.
+- **Installed, authenticated Amp CLI**, only for `desk amp`.
 
-desk is a single executable. It needs no daemon or configuration file, and Go is not needed after the build.
+desk is a single executable. It needs no daemon or manual configuration, and Go is not needed after the build. It stores workspace metadata and reuse preferences in its [data root](/docs/configuration/), outside project files.
+
+desk is licensed under GNU AGPL v3. These steps require source access; no public binary releases have been published yet.
 
 ## Build from Source
 
@@ -27,46 +30,26 @@ Build into a directory on your PATH. This example uses `~/.local/bin`.
 
 ```sh
 mkdir -p "$HOME/.local/bin"
-(cd cli && go build -trimpath -o "$HOME/.local/bin/desk" .)
+go -C cli build -trimpath -o "$HOME/.local/bin/desk" .
 ```
 </Step>
-<Step title="Add it to your PATH">
-Skip this step if `~/.local/bin` is already on your PATH.
-
-<Tabs>
-<Tab title="zsh">
+<Step title="Set up your shell">
+Run the binary directly; you don't need to edit PATH or a startup file yourself.
 
 ```sh
-echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc
+"$HOME/.local/bin/desk" init
 ```
 
-</Tab>
-<Tab title="bash">
-
-```sh
-echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
-```
-
-</Tab>
-</Tabs>
+desk detects zsh (including Oh My Zsh), bash, or fish and installs shell integration. To choose explicitly, use `init zsh`, `init bash`, or `init fish`.
 </Step>
 <Step title="Verify">
-Open a new shell and check that desk runs.
+Open a new terminal and check that desk runs.
 
 ```sh
 desk version
 ```
 
-A source build prints `dev`. Run `desk help` to see every command.
-</Step>
-<Step title="Add shell integration">
-Load desk's shell function so `desk new` and `desk cd` can change your directory and your prompt shows the current workspace. For zsh:
-
-```sh
-echo 'eval "$(desk init zsh)"' >> ~/.zshrc
-```
-
-See [Shell integration](/docs/shell-integration/) for bash, fish, and oh-my-zsh.
+A source build prints `dev`. Continue to the [Quickstart](/docs/quickstart/) for a first experiment, or [Shell integration](/docs/shell-integration/) for custom setup.
 </Step>
 </Steps>
 
@@ -78,11 +61,11 @@ The repository includes a script that builds archives for macOS and Linux on amd
 scripts/release.sh v0.1.0
 ```
 
-Each archive contains the `desk` binary. Check the archive against `SHA256SUMS` before extracting it. These binaries are not signed or notarized, and none have been published yet, so building from source is the supported way to install.
+Each archive contains the `desk` binary and `LICENSE`. Check the archive against `SHA256SUMS` before extracting it. These binaries are not signed or notarized, and no public releases have been published yet, so building from source is the supported way to install.
 
 ## Uninstall
 
-Delete the binary and remove the `desk init` line from your shell's startup file. Your workspaces stay in `~/.desk/workspaces/` until you delete them.
+Remove desk-managed blocks from your shell startup files, then delete the binary. For Oh My Zsh, also remove the managed block in `plugins/desk/desk.plugin.zsh` and any manually added `desk` plugin entry. Delete the plugin file if nothing else remains. Your workspaces stay in `~/.desk/workspaces/` until you delete them.
 
 ```sh
 rm "$HOME/.local/bin/desk"

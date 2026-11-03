@@ -1,0 +1,33 @@
+---
+title: desk switch
+description: Go to a workspace by name or prefix, or to the top of the current one.
+---
+
+## Usage
+
+```sh
+desk switch [NAME]
+```
+
+`NAME` is a workspace name or a unique prefix. Leave it out to return to the top of the workspace you're in.
+
+## Examples
+
+```sh
+desk list                  # find a workspace
+desk switch mis            # misty-ember, if it's the only match
+cd src/api
+desk switch                # back to the workspace root
+```
+
+An ambiguous prefix lists the matches and leaves you where you are.
+
+## Shell setup
+
+Run `desk init` once, then open a new terminal. A program cannot change its parent shell's directory, so switching uses desk's [shell integration](/docs/shell-integration/).
+
+For scripts without integration:
+
+```sh
+cd "$(desk info mis --path)"
+```

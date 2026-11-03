@@ -11,12 +11,16 @@ desk COMMAND [ARGUMENT]
 
 | Command | Purpose |
 | --- | --- |
-| [`desk new [REPOSITORY]`](/commands/new/) | Create an empty workspace or a clone, and go there |
-| [`desk cd [NAME]`](/commands/cd/) | Go to a workspace |
-| [`desk path [NAME]`](/commands/path/) | Print a workspace's path |
-| [`desk list`](/commands/list/) | Show workspaces; `*` marks the current one |
-| [`desk rm [NAME]`](/commands/rm/) | Delete a workspace after confirmation |
-| [`desk init SHELL`](/commands/init/) | Print shell integration for zsh, bash, or fish |
+| [`desk new [REPOSITORY] [--fresh\|--choose\|--reuse]`](/commands/new/) | Start scratch work, choose a workspace, or make an independent clone |
+| [`desk switch [NAME]`](/commands/switch/) | Go to a workspace |
+| [`desk info [NAME] [--path]`](/commands/info/) | Show a workspace's name, path, and source |
+| [`desk list`](/commands/list/) | Show a tree grouped by source repository, plus scratch |
+| [`desk rename [NAME] NEW_NAME`](/commands/rename/) | Rename the current workspace or a named one |
+| [`desk finish [NAME]`](/commands/finish/) | Mark a workspace disposable without removing it |
+| [`desk cleanup [--yes]`](/commands/cleanup/) | Preview and remove eligible inactive workspaces |
+| [`desk rm [NAME]`](/commands/rm/) | Move a workspace to garbage after confirmation |
+| [`desk amp [THREAD] [--copy\|--follow] [--repository REPOSITORY]`](/commands/amp/) | Copy or follow an Amp task in a fresh clone |
+| [`desk init [SHELL] [--print]`](/commands/init/) | Set up your shell, or print integration without installing |
 | [`desk version`](/commands/version/) | Print the version |
 
 `desk help`, `desk --help`, or `desk` with no arguments prints a summary.
@@ -30,7 +34,13 @@ A workspace name such as `misty-ember`, or any prefix that matches only one work
 GitHub `owner/repo`, any Git URL, or a local path that starts with `/`, `./`, or `../`.
 </ParamField>
 
-`desk new` and `desk cd` change your directory only with [shell integration](/docs/shell-integration/). Without it, `desk new` still creates the workspace and prints its path.
+`desk new` and `desk switch` change your directory with [shell integration](/docs/shell-integration/). Run `desk init` once, then open a new terminal. Without it, `desk new` still creates the workspace and prints its path. `desk switch` only enters existing workspaces; it never creates a clone.
+
+## Removal and retention
+
+Cleanup requires managed workspaces inactive for at least 72 hours, without local-only work or detectable running processes/live Amp follow. Scratch workspaces without a remote require `desk finish` first. `--yes` skips only confirmation. Explicit `rm` still asks and can remove local-only work.
+
+Both move workspaces to garbage for 72 hours from removal. Every desk invocation silently collects expired garbage; there is no daemon. See [cleanup and retention](/docs/cleanup/).
 
 ## Output and Exit Status
 

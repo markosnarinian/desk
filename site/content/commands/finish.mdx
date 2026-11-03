@@ -1,0 +1,26 @@
+---
+title: desk finish
+description: Mark a workspace disposable without removing it immediately.
+---
+
+## Usage
+
+```text title="Usage"
+desk finish [NAME]
+```
+
+`NAME` is a workspace name or unique prefix. Leave it out for the current workspace, even from a subdirectory.
+
+## Behavior
+
+Marks the workspace finished/disposable in desk's state outside project files. It does not remove files immediately.
+
+Scratch workspaces without a remote need this explicit signal before [`desk cleanup`](/commands/cleanup/) can consider them. Finishing overrides only that exclusion, not the 72-hour inactivity requirement, running-process checks, or any Git safety checks—even ignored files remain protected. For an existing directory without state, it also starts managed state.
+
+```sh
+desk finish
+desk finish misty
+desk cleanup
+```
+
+Use [`desk rm`](/commands/rm/) for immediate, confirmed removal to garbage instead. See [cleanup and retention](/docs/cleanup/).

@@ -10,13 +10,13 @@ description: What a workspace is, how it's named, and where it lives.
 | Scratch | `desk new` | An empty directory |
 | Repository | `desk new REPOSITORY` | A Git clone |
 
-Both use the same commands afterwards. `desk list` shows a repository's origin and `scratch` for everything else.
+Both use the same commands afterwards. `desk list` groups repository workspaces by canonical source, such as `github.com/octocat/hello-world`, and scratch workspaces under `playgrounds`.
 
 ## Names
 
-Every workspace gets a random two-word name, an adjective and a noun, such as `drifting-tundra` or `misty-ember`. The name is the directory name, so there's nothing else to remember.
+Every new workspace gets a random two-word name, such as `drifting-tundra` or `misty-ember`. No task name is required. When a useful name emerges, run `desk rename local-test` for the current workspace, or `desk rename misty local-test` for another one.
 
-Commands accept a unique prefix: `desk cd dri` works as long as no other workspace starts with `dri`. Leave the name out entirely and desk uses the workspace containing your current directory, even from deep inside it.
+Commands accept a unique prefix: `desk switch dri` works as long as no other workspace starts with `dri`. Leave the name out entirely and desk uses the workspace containing your current directory, even from deep inside it.
 
 ## Where Workspaces Live
 
@@ -26,8 +26,12 @@ Commands accept a unique prefix: `desk cd dri` works as long as no other workspa
 └── misty-ember/          # a clone, with its own .git
 ```
 
-That's all. There is no registry: desk reads the directory each time it runs, and a repository workspace's source is its Git `origin`. You can rename, move, or delete workspace directories by hand. See [Configuration](/docs/configuration/) to use a different location.
+These are plain directories. A repository workspace's source is its Git `origin`; activity and lifecycle metadata live outside project files in `~/.desk/state/`. Reuse preferences live in `~/.desk/preferences.json`. Use desk's commands to keep that state consistent. See [Configuration](/docs/configuration/) to use a different data root.
 
 ## Lifetime
 
-A workspace stays until you run [`desk rm`](/commands/rm/) or delete it yourself. desk never deletes anything on its own, and runs nothing in the background.
+Use [`desk finish`](/commands/finish/) to mark a workspace disposable without removing it immediately. Scratch workspaces without a remote need this explicit signal before cleanup can consider them.
+
+[`desk cleanup`](/commands/cleanup/) previews managed workspaces inactive for at least 72 hours, with no local-only work or detectable running processes, then asks before removal. [`desk rm`](/commands/rm/) removes one explicitly after confirmation, even if it has local-only work.
+
+Both move workspaces to garbage for 72 hours from removal. Every desk invocation silently collects expired garbage; there is no daemon. See [cleanup and retention](/docs/cleanup/) for safety checks and activity limits.

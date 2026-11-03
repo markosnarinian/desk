@@ -34,7 +34,11 @@ export const sections: Section[] = [
       {
         label: "Guides",
         icon: "compass",
-        items: [{ slug: "repository-workspaces", label: "Repository workspaces" }],
+        items: [
+          { slug: "repository-workspaces", label: "Repository workspaces" },
+          { slug: "amp", label: "Test Amp work locally" },
+          { slug: "cleanup", label: "Clear away finished work" },
+        ],
       },
       {
         label: "Reference",
@@ -53,9 +57,12 @@ export const sections: Section[] = [
         icon: "terminal",
         items: [
           { slug: "new", label: "desk new", badge: create },
-          { slug: "cd", label: "desk cd", badge: move },
-          { slug: "path", label: "desk path", badge: read },
+          { slug: "switch", label: "desk switch", badge: move },
+          { slug: "info", label: "desk info", badge: read },
           { slug: "list", label: "desk list", badge: read },
+          { slug: "rename", label: "desk rename", badge: move },
+          { slug: "finish", label: "desk finish" },
+          { slug: "cleanup", label: "desk cleanup", badge: remove },
           { slug: "rm", label: "desk rm", badge: remove },
         ],
       },
@@ -63,6 +70,7 @@ export const sections: Section[] = [
         label: "Other",
         icon: "hash",
         items: [
+          { slug: "amp", label: "desk amp", badge: create },
           { slug: "init", label: "desk init", badge: setup },
           { slug: "version", label: "desk version", badge: read },
         ],

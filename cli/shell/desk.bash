@@ -1,18 +1,27 @@
-# desk shell integration for bash. Load with: eval "$(desk init bash)"
+# desk shell integration for bash. Load with: eval "$(desk init bash --print)"
 
 desk() {
-  local dir
+  local dir old relative
   case "$1" in
-    new)
+    new|amp)
       dir="$(command desk "$@")" || return
       builtin cd -- "$dir"
       ;;
-    cd)
+    switch)
       shift
-      dir="$(command desk path "$@")" || return
-      builtin cd -- "$dir"
+      dir="$(command desk info --path "$@")" || return
+      builtin cd -- "$dir" || return
+      command desk _visit
       ;;
-    rm)
+    rename)
+      old="$(command desk info --path 2>/dev/null)"
+      relative="${PWD#"$old"}"
+      dir="$(command desk "$@")" || return
+      if [[ ! -d $PWD ]]; then
+        builtin cd -- "$dir$relative"
+      fi
+      ;;
+    rm|cleanup)
       command desk "$@" || return
       [[ -d $PWD ]] || builtin cd -- ~
       ;;
@@ -65,15 +74,22 @@ _desk_complete() {
   local cur="${COMP_WORDS[COMP_CWORD]}" d
   COMPREPLY=()
   if (( COMP_CWORD == 1 )); then
-    COMPREPLY=($(compgen -W "new cd path list rm init version help" -- "$cur"))
-  elif (( COMP_CWORD == 2 )); then
+    COMPREPLY=($(compgen -W "new amp switch info list rename finish cleanup rm init version help" -- "$cur"))
+  elif (( COMP_CWORD >= 2 )); then
     case "${COMP_WORDS[1]}" in
-      cd|path|rm)
+      switch|info|rm|rename|finish)
+        if [[ ${COMP_WORDS[1]} == info && $cur == -* ]]; then
+          COMPREPLY=($(compgen -W "--path" -- "$cur"))
+          return
+        fi
         for d in "${DESK_HOME:-$HOME/.desk}/workspaces/$cur"*/; do
           [[ -d $d ]] && d="${d%/}" && COMPREPLY+=("${d##*/}")
         done
         ;;
-      init) COMPREPLY=($(compgen -W "zsh bash fish" -- "$cur")) ;;
+      new) COMPREPLY=($(compgen -W "--fresh --choose --reuse" -- "$cur")) ;;
+      amp) COMPREPLY=($(compgen -W "--copy --follow --repository" -- "$cur")) ;;
+      cleanup) COMPREPLY=($(compgen -W "--yes" -- "$cur")) ;;
+      init) COMPREPLY=($(compgen -W "zsh bash fish oh-my-zsh --print" -- "$cur")) ;;
     esac
   fi
 }

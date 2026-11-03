@@ -24,7 +24,8 @@ for target in darwin/amd64 darwin/arm64 linux/amd64 linux/arm64; do
       -trimpath -buildvcs=false -ldflags "-s -w -X main.version=$version" \
       -o "$stage/$name/desk" .
   )
-  tar -czf "$output/$name.tar.gz" -C "$stage/$name" desk
+  cp "$root/LICENSE" "$stage/$name/LICENSE"
+  tar -czf "$output/$name.tar.gz" -C "$stage/$name" desk LICENSE
 done
 (
   cd "$output"

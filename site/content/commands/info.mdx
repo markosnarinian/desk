@@ -1,0 +1,27 @@
+---
+title: desk info
+description: Show a workspace's name, path, and source.
+---
+
+## Usage
+
+```sh
+desk info [NAME] [--path]
+```
+
+`NAME` is a name or unique prefix. Leave it out to inspect the workspace you're in, even from a subdirectory.
+
+The source is the Git origin, or `scratch` for a workspace without one. Outside a workspace, give a name from `desk list`.
+
+## Use the path
+
+`--path` prints only the absolute path, for scripts and other tools:
+
+```sh
+desk info misty --path
+code "$(desk info misty --path)"
+```
+
+```text
+/home/you/.desk/workspaces/misty-ember
+```

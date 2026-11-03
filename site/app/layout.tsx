@@ -7,8 +7,8 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
 
 export const metadata: Metadata = {
   metadataBase: siteUrl ? new URL(siteUrl) : undefined,
-  title: { default: "desk — workspaces for the work in between", template: "%s | desk" },
-  description: "desk gives quick experiments and one-off clones named workspaces, and your shell prompt shows where you are.",
+  title: { default: "desk — workspaces for temporary local work", template: "%s | desk" },
+  description: "Workspaces for the local part: try an idea, explore a clone, copy or follow an Amp task, and safely clear away finished work.",
   icons: { icon: "/favicon.svg" },
 }
 

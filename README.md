@@ -1,12 +1,18 @@
 # desk
 
-A place for the work in between. A small Go CLI that keeps occasional local
-development in managed workspaces, out of your way.
+A workspace for the local part.
+
+As agents take more programming work to the cloud, local work becomes more
+occasional and fragmented: a temporary clone, a playground, a throwaway
+scaffold, a local prototype.
+
+desk gives each a workspace with a clear start and finish. Create one, explore
+with your usual tools, return when needed, and remove it when you're done.
 
 **Status:** early and deliberately minimal. macOS and Linux; scratch
-directories and Git clones with two-word names; shell integration for zsh,
-oh-my-zsh, bash, and fish. The [GitHub repository](https://github.com/markosnarinian/desk)
-is private while licensing is finalized. No public binary releases have been published.
+directories and Git clones with two-word names; automatic shell setup for zsh
+(including Oh My Zsh), bash, and fish. Licensed under [GNU AGPL v3](LICENSE).
+No public binary releases have been published.
 
 ## Build and try it
 
@@ -14,27 +20,84 @@ Requires Go 1.24+; repositories also need Git.
 
 ```sh
 mkdir -p "$HOME/.local/bin"
-(cd cli && go build -trimpath -o "$HOME/.local/bin/desk" .)
-export PATH="$HOME/.local/bin:$PATH"
-eval "$(desk init zsh)"   # or bash; fish: desk init fish | source
+go -C cli build -trimpath -o "$HOME/.local/bin/desk" .
+"$HOME/.local/bin/desk" init
 ```
 
+Open a new terminal. `desk init` detects your shell and updates its startup
+configuration. Zsh setup also detects Oh My Zsh. Or choose `desk init zsh`,
+`desk init bash`, or `desk init fish`.
+
+## Use it for real work
+
+Try a small script (requires Node.js), then clear it away:
+
 ```sh
-desk new                       # empty workspace, e.g. drifting-tundra; cd's there
-desk new octocat/Hello-World   # clone, or return to the existing clone
-desk list                      # * marks the workspace you're in
-desk cd misty                  # by name or unique prefix; no name: workspace top
-desk path misty                # print the path, for scripts
-desk rm                        # current workspace (or NAME), after confirmation
+desk new
+printf 'console.log(2 ** 10)\n' > try.js
+node try.js                    # 1024
+desk rm                        # asks before deleting; takes you home
 ```
+
+Need a repository locally? `desk new owner/repo` offers existing workspaces
+and a new clone. Use `--fresh` for an independent clone, `--reuse` to remember
+a per-repository preference for the most recently used workspace, or `--choose`
+to override that preference just this time. No task name is required.
+
+To test Amp work locally, paste a thread URL or ID into `desk amp THREAD`, or
+run `desk amp` to browse recent tasks. Choose copy to keep an editable snapshot,
+or follow to watch live changes in a fresh clone. This includes uncommitted and
+unpushed work without pushing. Requires Git and an installed, authenticated
+Amp CLI; dependencies, services, and secrets are not copied.
+
+```sh
+desk amp THREAD --copy          # keep a snapshot to edit locally
+desk amp THREAD --follow        # foreground; test from a separate terminal
+```
+
+While following, use `desk switch NAME` in another terminal and don't edit
+locally. Stopping follow restores the pre-sync checkout. See the
+[Amp guide](site/content/docs/amp.mdx).
+
+```sh
+desk list                      # tree grouped by repository, plus scratch
+desk switch misty              # name or unique prefix from your list
+desk switch                    # back to the current workspace's top directory
+desk info                      # current workspace's name, path, and source
+code "$(desk info misty --path)" # open a workspace in another tool
+desk rename local-test         # rename the current workspace when useful
+desk finish                    # mark the current workspace disposable
+desk cleanup                   # preview eligible workspaces, then confirm all
+desk rm misty                  # remove explicitly, after confirmation
+```
+
+Names start random; `misty` is an example. `desk cleanup` only considers managed
+workspaces inactive for at least 72 hours, with no local-only work or detectable
+running processes/live Amp follow. Git changes and ignored files (including in
+nested repositories), stashes, unpushed commits (including other branches, tags,
+and detached HEAD), or failed Git inspection prevent cleanup. Scratch workspaces without a remote need
+`desk finish` first; finish never bypasses Git safety checks. `--yes` skips only
+confirmation. Cleanup uses locally known remote-tracking refs without fetching;
+it cannot guarantee the remote server still has the work.
+
+Pre-upgrade directories without state stay outside cleanup until you explicitly
+use them through `desk switch`, select them with `new`, or mark them finished.
+
+Activity comes from saved file/directory changes, recorded new/switch visits,
+and detectable processes—not every editor keystroke or unsaved buffer.
+Both cleanup and explicit removal move workspaces to `~/.desk/garbage` for
+72 hours from removal. Every desk invocation silently collects expired garbage;
+there is no daemon. Explicit `desk rm` still asks even when local-only work exists.
+See the [cleanup guide](site/content/docs/cleanup.mdx).
 
 Inside a workspace your prompt starts with `(drifting-tundra/src/api)`: the
 workspace and your directory inside it. Commands that take a NAME default to
 the workspace you're in.
 
 Workspaces are plain directories in `~/.desk/workspaces/<name>` (`DESK_HOME`
-overrides `~/.desk`). There is no registry, background process, or automatic
-cleanup. A repository workspace's source is its Git origin, so `desk new`
+overrides `~/.desk`). Workspace metadata lives outside project files in `state/NAME.json`,
+with reuse preferences in `preferences.json`. There is no background process.
+A repository workspace's source is its Git origin, so `desk new`
 recognizes the same repository however its URL is spelled. See the
 [shell integration](site/content/docs/shell-integration.mdx) and
 [configuration](site/content/docs/configuration.mdx) docs.
@@ -42,7 +105,7 @@ recognizes the same repository however its URL is spelled. See the
 ## Development and documentation
 
 - `cli/`: Go executable and tests; no external Go dependencies. Shell
-  integration scripts live in `cli/shell/`, embedded and printed by `desk init`.
+  integration scripts live in `cli/shell/`, embedded and printed by `desk init --print`.
 - `site/`: Next.js + Chakra UI website: landing page, documentation, and a
   command reference, written in MDX.
 - `scripts/release.sh`: local release archives and SHA-256 checksums.
@@ -70,7 +133,7 @@ scripts/release.sh v0.1.0
 ```
 
 This creates `dist/desk_v0.1.0_{darwin,linux}_{amd64,arm64}.tar.gz` and
-`dist/SHA256SUMS`. Each archive contains `desk`. Check the checksum
+`dist/SHA256SUMS`. Each archive contains `desk` and `LICENSE`. Check the checksum
 before extracting; put the executable in a directory on PATH. These binaries are
 not signed or notarized. Source builds are the current installation path.
 
@@ -82,4 +145,4 @@ Release publication and signing are separate decisions.
 
 ## Deliberately absent, for now
 
-Windows, editor and Amp integrations, automatic pulls, and any automatic cleanup.
+Windows, editor integrations, automatic pulls, and environment replication.

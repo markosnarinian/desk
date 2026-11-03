@@ -1,6 +1,6 @@
 ---
 title: desk list
-description: Show every workspace and where it came from.
+description: Show a workspace tree grouped by source repository, plus scratch.
 ---
 
 ## Usage
@@ -14,10 +14,13 @@ desk list
 ## Output
 
 ```text
-  drifting-tundra  scratch
-* misty-ember      https://github.com/octocat/Hello-World.git
+github.com/octocat/hello-world
+├── * misty-ember  /home/you/.desk/workspaces/misty-ember
+└──   quiet-forest  /home/you/.desk/workspaces/quiet-forest
+playgrounds
+└──   drifting-tundra  /home/you/.desk/workspaces/drifting-tundra
 ```
 
-Each line shows a workspace name and its Git `origin`, or `scratch` for a workspace that is not a clone. `*` marks the workspace containing your current directory.
+The tree groups workspaces by canonical source repository, with scratch workspaces under `playgrounds`. Each child shows its name and absolute path; `*` marks the workspace containing your current directory. Names in the example are generated. Use `desk info NAME` for one workspace, or `desk info NAME --path` for a path you can pass to another tool.
 
-`list` reads only local files, so it is instant and works offline. With no workspaces, it prints a hint to standard error and nothing on standard output.
+`list` works offline. With no workspaces, it prints a hint to standard error and nothing on standard output.

@@ -1,0 +1,69 @@
+---
+title: Clear away finished work
+description: Preview inactive workspaces safely, mark scratch work disposable, and understand garbage retention.
+---
+
+## Review what you've kept
+
+```sh
+desk list
+desk cleanup
+```
+
+`desk cleanup` previews eligible workspaces and asks you to confirm removal of all candidates. It only considers **managed workspaces** inactive for **at least 72 hours**, with no local-only work and no detectable running processes or live Amp follow. It does not scan arbitrary project directories.
+
+Existing or pre-upgrade directories without state stay outside cleanup until you explicitly use them through `desk switch`, select them with `desk new`, or mark them finished. That starts managed activity state; merely listing them does not.
+
+For unattended use:
+
+```sh
+desk cleanup --yes
+```
+
+`--yes` skips the prompt, not the eligibility checks.
+
+## Mark a scratch workspace disposable
+
+Scratch workspaces without a remote are excluded until you explicitly finish them:
+
+```sh
+desk finish
+desk finish misty
+```
+
+Without a name, `finish` uses the current workspace. Give a name or unique prefix to finish another one. It marks work disposable; it does not remove it immediately or bypass inactivity and safety checks. You can also finish a repository workspace. Repository local-only work remains protected even after finishing.
+
+## What protects a repository
+
+Cleanup excludes a workspace when it finds:
+
+- untracked or uncommitted changes, including in nested repositories;
+- ignored files too: even ignored work such as `.env` may be important;
+- stashes;
+- unpushed commits, including other branches, tags, and detached HEAD;
+- a Git inspection failure;
+- detectable running processes or an active Amp follow session.
+
+`finish` only overrides the scratch/no-remote exclusion, never Git safety checks. Review repositories with ignored files and use explicit `desk rm` if you really want to remove them; desk doesn't guess which filenames are disposable.
+
+Cleanup makes no network requests or fetches. Checks use locally known remote-tracking refs, not a guarantee that the remote server is reachable or still holds the work. Cleanup is conservative, not a substitute for a backup.
+
+## What counts as activity
+
+desk uses saved file and directory changes, recorded `new`/`switch` visits, and detectable processes. Activity tracking is not perfect: it does not see every editor keystroke or unsaved buffer. Save work you want to keep, and don't treat a quiet editor as a reliable activity signal.
+
+## Remove one explicitly
+
+```sh
+desk rm misty
+```
+
+Explicit `rm` shows a summary and asks for confirmation, even for work with local-only changes. Unlike cleanup, it moves whatever you confirm. With shell integration, removing the current workspace takes you home.
+
+## Garbage is temporary, not a backup
+
+Both cleanup and `rm` move workspaces to `~/.desk/garbage` (or `$DESK_HOME/garbage`). Retention is **72 hours from removal**, separate from the 72-hour inactivity requirement before cleanup.
+
+Every desk invocation silently collects expired garbage. No daemon runs and no scheduled job is needed. Once retention expires, the next invocation may permanently delete it. Don't leave your only copy of important work in garbage.
+
+Workspace metadata lives outside project files in `state/NAME.json`; reuse preferences live in `preferences.json` under the same [data root](/docs/configuration/).

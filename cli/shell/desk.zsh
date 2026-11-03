@@ -1,18 +1,27 @@
-# desk shell integration for zsh. Load with: eval "$(desk init zsh)"
+# desk shell integration for zsh. Load with: eval "$(desk init zsh --print)"
 
 desk() {
-  local dir
+  local dir old relative
   case "$1" in
-    new)
+    new|amp)
       dir="$(command desk "$@")" || return
       builtin cd -- "$dir"
       ;;
-    cd)
+    switch)
       shift
-      dir="$(command desk path "$@")" || return
-      builtin cd -- "$dir"
+      dir="$(command desk info --path "$@")" || return
+      builtin cd -- "$dir" || return
+      command desk _visit
       ;;
-    rm)
+    rename)
+      old="$(command desk info --path 2>/dev/null)"
+      relative="${PWD#"$old"}"
+      dir="$(command desk "$@")" || return
+      if [[ ! -d $PWD ]]; then
+        builtin cd -- "$dir$relative"
+      fi
+      ;;
+    rm|cleanup)
       command desk "$@" || return
       [[ -d $PWD ]] || builtin cd -- ~
       ;;
@@ -58,12 +67,20 @@ add-zsh-hook precmd _desk_precmd
 
 _desk() {
   if (( CURRENT == 2 )); then
-    compadd new cd path list rm init version help
-  elif (( CURRENT == 3 )); then
+    compadd new amp switch info list rename finish cleanup rm init version help
+  elif (( CURRENT >= 3 )); then
     case "$words[2]" in
-      cd|path|rm) compadd -- "${DESK_HOME:-$HOME/.desk}"/workspaces/*(N/:t) ;;
-      init) compadd zsh bash fish ;;
+      switch|info|rm|rename|finish)
+        [[ $words[2] == info ]] && compadd -- --path
+        compadd -- "${DESK_HOME:-$HOME/.desk}"/workspaces/*(N/:t)
+        ;;
+      new) compadd -- --fresh --choose --reuse ;;
+      amp) compadd -- --copy --follow --repository ;;
+      cleanup) compadd -- --yes ;;
+      init) compadd -- zsh bash fish oh-my-zsh --print ;;
     esac
   fi
 }
-(( $+functions[compdef] )) && compdef _desk desk
+if (( $+functions[compdef] )); then
+  compdef _desk desk
+fi

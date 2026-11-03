@@ -1,6 +1,6 @@
 ---
 title: desk rm
-description: Delete a workspace after showing what's in it and asking for confirmation.
+description: Move a workspace to garbage after a summary and confirmation.
 ---
 
 ## Usage
@@ -17,12 +17,14 @@ A workspace name or a unique prefix of one. Leave it out to delete the workspace
 
 ## Behavior
 
-desk summarizes the workspace, then asks before deleting it:
+desk summarizes the workspace, then asks before moving it to garbage:
 
 - a scratch workspace shows whether it is `empty` or `has files`;
 - a repository shows its origin, the number of uncommitted changes, and the number of commits on local branches that no remote-tracking branch contains.
 
-Only `y` or `yes` deletes. Anything else, including an empty answer, keeps the workspace and exits with status `1`. With [shell integration](/docs/shell-integration/), if you deleted the workspace you were in, your shell moves to your home directory.
+Only `y` or `yes` removes it. Anything else, including an empty answer, keeps the workspace and exits with status `1`. With [shell integration](/docs/shell-integration/), if you removed the workspace you were in, your shell moves to your home directory.
+
+Removed workspaces stay in `~/.desk/garbage` for 72 hours from removal (`DESK_HOME` overrides the root). Every desk invocation silently collects expired garbage; there is no daemon.
 
 ## Example
 
@@ -32,9 +34,9 @@ desk rm
 
 ```text
 Delete misty-ember (https://github.com/octocat/Hello-World.git; 2 uncommitted changes, 1 unpushed commits)? [y/N] y
-desk: deleted misty-ember
+Moved to garbage for 72 hours.
 ```
 
 <Callout type="warning">
-Deletion is permanent. The summary is information, not a safety check: desk deletes whatever you confirm. Unpushed commits are counted against your last fetch.
+The summary is information, not a safety check: explicit removal moves whatever you confirm, including local-only work. After the 72-hour retention period, garbage can be permanently deleted by any desk invocation. Use [`desk cleanup`](/commands/cleanup/) for eligibility-checked removal instead. Unpushed commits are counted against your last fetch.
 </Callout>

@@ -26,34 +26,31 @@ import { ColorModeButton } from "@/components/ui/color-mode"
 export const metadata = { alternates: { canonical: "/" } }
 
 const features = [
-  { icon: "scratch", title: "Scratch workspaces", text: "desk new gives you an empty directory with a name like drifting-tundra. No naming, no deciding where it lives." },
-  { icon: "git", title: "Repository workspaces", text: "desk new owner/repo clones into its own workspace. Run it again, however you spell the URL, and you're back in the same clone." },
-  { icon: "terminal", title: "Your prompt knows", text: "In zsh, oh-my-zsh, bash, and fish, your prompt shows the workspace and where you are inside it." },
-  { icon: "list", title: "One list", text: "desk list shows every workspace and its origin, instantly and offline. * marks the one you're in." },
-  { icon: "compass", title: "Names, not paths", text: "desk cd misty jumps to a workspace by name or unique prefix. With no name, it goes to the top of the current one." },
-  { icon: "trash", title: "Gone when you say so", text: "desk rm shows uncommitted and unpushed work, then asks. Nothing is deleted automatically." },
+  { icon: "scratch", title: "Build a playground", text: "Try a library, generate a throwaway scaffold, or prototype an idea. Start with desk new, then use your usual tools." },
+  { icon: "git", title: "Explore a repository", text: "Choose an existing workspace or a fresh clone with desk new owner/repo. Read the code, debug, or try a change without naming a task first." },
+  { icon: "terminal", title: "Test cloud work locally", text: "Use desk amp to copy an Amp task or follow it live in a fresh local clone. Uncommitted and unpushed work comes along—no push required." },
 ]
 
 const steps = [
-  { title: "Start", command: "desk new", text: "Creates a workspace with a two-word name and moves you there." },
-  { title: "Clone", command: "desk new owner/repo", text: "Clones into a new workspace, or returns to the existing clone." },
-  { title: "Move around", command: "desk cd misty", text: "Jump between workspaces by name or prefix. Your prompt follows." },
-  { title: "Finish", command: "desk rm", text: "Deletes the workspace you're in, after you confirm." },
+  { title: "Create", command: "desk new", text: "Start an experiment. Add owner/repo to work on a clone instead." },
+  { title: "Find", command: "desk list", text: "See a tree of workspaces grouped by source repository, with a separate scratch group." },
+  { title: "Return", command: "desk switch misty", text: "Go to a workspace by name or a unique prefix." },
+  { title: "Clear away", command: "desk cleanup", text: "Preview safe workspaces inactive for 72 hours, then confirm. Mark scratch work disposable with desk finish first." },
 ]
 
 const shellFeatures = [
   "The workspace name and your path inside it, in front of your prompt",
-  "desk new and desk cd change your directory",
+  "desk new and desk switch change your directory",
   "Tab completion for commands and workspace names",
-  "Works with oh-my-zsh themes and fish's default prompt",
+  "Works with your existing prompt and theme",
   "desk_prompt_info for placing it in a custom prompt",
 ]
 
-const session = `➜  ~ desk cd misty
+const session = `➜  ~ desk switch misty
 (misty-ember) ➜  misty-ember cd src/api
-(misty-ember/src/api) ➜  api desk list
-  drifting-tundra  scratch
-* misty-ember      https://github.com/octocat/Hello-World.git`
+(misty-ember/src/api) ➜  api desk switch
+(misty-ember) ➜  misty-ember desk info --path
+/home/you/.desk/workspaces/misty-ember`
 
 function Navbar() {
   return (
@@ -111,11 +108,11 @@ export default function Home() {
               Early and minimal · macOS and Linux
             </Badge>
             <Heading as="h1" size={{ base: "4xl", md: "6xl" }} letterSpacing="tight">
-              A place for the work in between
+              A workspace for the local part.
             </Heading>
             <Text textStyle={{ base: "lg", md: "xl" }} color="fg.muted" maxW="2xl">
-              desk gives quick experiments and one-off clones named workspaces, a few commands to move between
-              them, and a prompt that shows where you are.
+              As agents take more work to the cloud, local work becomes more fragmented.
+              desk gives temporary clones, playgrounds, and prototypes a workspace you can create, return to, and remove.
             </Text>
             <HStack gap="3" flexWrap="wrap" justify="center">
               <Button asChild size="lg" colorPalette="teal">
@@ -139,24 +136,25 @@ export default function Home() {
               <Text textStyle="xs" color="fg.muted">
                 Terminal
               </Text>
-              <CopyButton value="desk new octocat/Hello-World" label="Copy command" />
+              <CopyButton value="desk new" label="Copy command" />
             </HStack>
-            <Box as="pre" p="5" fontFamily="mono" textStyle="sm" lineHeight="1.8" overflowX="auto" color="fg.muted">
+            <Box as="pre" p="5" fontFamily="mono" textStyle="sm" lineHeight="1.8" whiteSpace="pre-wrap" overflowWrap="anywhere" color="fg.muted">
               <Text as="span" color="fg">
-                $ desk new octocat/Hello-World
+                $ desk new
               </Text>
-              {"\nCloning into '/home/you/.desk/workspaces/misty-ember'...\ndesk: created misty-ember\n"}
+              {"\ndesk: created misty-ember\n"}
               <Text as="span" color="fg">
-                (misty-ember) $ desk new
-              </Text>
-              {"\ndesk: created drifting-tundra\n"}
-              <Text as="span" color="fg">
-                (drifting-tundra) $ desk cd mis
+                (misty-ember) $ printf 'console.log(2 ** 10)\n' &gt; try.js
               </Text>
               {"\n"}
               <Text as="span" color="fg">
-                (misty-ember) $
+                (misty-ember) $ node try.js
               </Text>
+              {"\n1024\n"}
+              <Text as="span" color="fg">
+                (misty-ember) $ desk rm
+              </Text>
+              {"\nDelete misty-ember (has files)? [y/N] y\nMoved to garbage for 72 hours."}
             </Box>
           </Card.Root>
         </Container>
@@ -165,8 +163,8 @@ export default function Home() {
           <Container maxW="6xl">
             <SectionHeader
               tag="Why desk"
-              title="Stop collecting test-2 and tmp-fix"
-              text="Throwaway work tends to stick around: test-2, tmp-fix, a third clone of the same repo. desk keeps it in one place, under names you can remember."
+              title="Local work is changing"
+              text="Agents get cloud machines they can spin up and tear down. Humans need a local equivalent for exploration and experimentation: a clone to inspect, a throwaway scaffold, a prototype to run."
             />
             <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} gap="6" mt="14">
               {features.map((f) => {
@@ -192,8 +190,8 @@ export default function Home() {
         <Container maxW="6xl" py={{ base: "16", md: "24" }}>
           <SectionHeader
             tag="How it works"
-            title="Four commands, from idea to done"
-            text="Everything else is your normal shell and tools. Nothing happens in the background."
+            title="Create it. Use it. Clear it away."
+            text="Plain directories, your usual tools. Cleanup checks for local-only work before asking. Removed workspaces stay in garbage for 72 hours; expired garbage is collected when you run desk, not by a daemon."
           />
           <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} gap="8" mt="14">
             {steps.map((s, i) => (
@@ -226,8 +224,8 @@ export default function Home() {
                   Your prompt shows where you are
                 </Heading>
                 <Text color="fg.muted" textStyle="lg">
-                  One line in your shell's startup file lets desk change your directory and puts the current workspace in
-                  front of your prompt, in zsh, oh-my-zsh, bash, and fish.
+                  Run desk init once. It sets up directory switching, completion, and a workspace prompt
+                  for zsh (including Oh My Zsh), bash, or fish. Then open a new terminal.
                 </Text>
                 <List.Root gap="2.5" variant="plain">
                   {shellFeatures.map((item) => (
@@ -247,13 +245,13 @@ export default function Home() {
               </Stack>
               <Card.Root variant="outline" overflow="hidden">
                 <Box px="4" py="2.5" borderBottomWidth="1px" textStyle="xs" color="fg.muted">
-                  oh-my-zsh, robbyrussell theme
+                  Oh My Zsh, robbyrussell theme
                 </Box>
-                <Box as="pre" p="5" fontFamily="mono" textStyle="xs" lineHeight="1.9" overflowX="auto">
+                <Box as="pre" p="5" fontFamily="mono" textStyle="xs" lineHeight="1.9" whiteSpace="pre-wrap" overflowWrap="anywhere">
                   {session}
                 </Box>
                 <Box px="4" py="3" borderTopWidth="1px" textStyle="sm" color="fg.muted">
-                  Add <Code>eval "$(desk init zsh)"</Code> to <Code>~/.zshrc</Code>, or the bash or fish equivalent.
+                  Run <Code>desk init</Code> to detect your shell, including Oh My Zsh setups.
                 </Box>
               </Card.Root>
             </SimpleGrid>
@@ -264,13 +262,13 @@ export default function Home() {
           <Card.Root variant="subtle" colorPalette="teal" bg="teal.subtle" textAlign="center">
             <Card.Body alignItems="center" gap="4" py={{ base: "10", md: "14" }}>
               <Heading as="h2" size={{ base: "2xl", md: "3xl" }}>
-                Try it without touching your real workspaces
+                Your next experiment doesn't need a permanent address
               </Heading>
               <Text color="fg.muted" maxW="xl">
-                Point desk at a separate data root while you get a feel for it. Unset the variable to go back.
+                Build desk, run desk init, and open a new terminal. Start with an empty workspace.
               </Text>
               <Code size="lg" px="3" py="2">
-                export DESK_HOME=&quot;$HOME/.desk-trial&quot;
+                desk new
               </Code>
               <HStack gap="3" mt="2" flexWrap="wrap" justify="center">
                 <Button asChild colorPalette="teal">

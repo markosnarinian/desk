@@ -1,96 +1,75 @@
 ---
 title: Shell integration
-description: Let desk change directories, show the current workspace in your prompt, and complete workspace names in zsh, oh-my-zsh, bash, and fish.
+description: Automatic setup for zsh (including Oh My Zsh), bash, and fish.
 ---
 
-A program can't change its parent shell's directory, so `desk new` and `desk cd` need a small shell function. The same integration adds the current workspace to your prompt and completes commands and workspace names.
+## Set up once
 
-## Set It Up
+```sh
+desk init
+```
 
-Add one line to your shell's startup file, after any prompt or theme setup:
+desk detects your shell from `$SHELL`, updates its startup configuration, and tells you what changed. Open a new terminal to load it. Running init again is safe; it doesn't add duplicate setup.
+
+To choose explicitly:
+
+```sh
+desk init zsh
+desk init bash
+desk init fish
+```
+
+Use the command for your shell, not all three. A child process cannot change the shell you're already using.
+
+For bash, setup covers both `.bashrc` and the active login file (`.bash_profile`, `.bash_login`, or `.profile`). Fish uses `$XDG_CONFIG_HOME/fish/config.fish`, or `~/.config/fish/config.fish`.
+
+## Oh My Zsh
+
+Zsh setup detects Oh My Zsh from `$ZSH` or the `oh-my-zsh.sh` source line in your startup file. It uses the same zsh integration, loaded through a custom plugin after your existing setup. Your plugin list, custom directory, and theme stay unchanged. Use `desk init oh-my-zsh` only if detection misses your setup; it adds no extra features.
+
+The plugin is installed under exported `$ZSH_CUSTOM`, or `$ZSH/custom`, with `~/.oh-my-zsh/custom` as the default. Export a custom location before running init to install there. Zsh startup configuration follows `$ZDOTDIR` when set.
+
+## What changes
+
+- `desk new` and `desk switch` move into a workspace.
+- The prompt shows the workspace and your path inside it: `(misty-ember/src/api)`.
+- Tab completes commands and workspace names.
+- `desk rm` takes you home if you delete the workspace you're in.
+
+Outside a workspace, your prompt stays unchanged. The prefix works with Oh My Zsh themes and fish's default prompt.
+
+## Manual or temporary loading
+
+`--print` outputs integration without editing any files:
 
 <Tabs>
 <Tab title="zsh">
 
 ```sh
-# ~/.zshrc
-eval "$(desk init zsh)"
-```
-
-</Tab>
-<Tab title="oh-my-zsh">
-
-Install desk as a custom plugin:
-
-```sh
-mkdir -p "$ZSH_CUSTOM/plugins/desk"
-echo 'eval "$(desk init zsh)"' > "$ZSH_CUSTOM/plugins/desk/desk.plugin.zsh"
-```
-
-Then add `desk` to `plugins=(...)` in `~/.zshrc`.
-
-</Tab>
-<Tab title="bash">
-
-```sh
-# ~/.bashrc
-eval "$(desk init bash)"
-```
-
-</Tab>
-<Tab title="fish">
-
-```sh
-# ~/.config/fish/config.fish
-desk init fish | source
-```
-
-</Tab>
-</Tabs>
-
-Open a new terminal to load it.
-
-## What Your Prompt Shows
-
-Inside a workspace, your prompt starts with the workspace name and your directory relative to it:
-
-```text
-(misty-ember/src/api) ➜  api
-```
-
-Outside workspaces nothing changes. The prefix is added in front of your existing prompt, so it works with oh-my-zsh themes and fish's default prompt.
-
-## Placing It Yourself
-
-Set `DESK_PROMPT_DISABLE=1` before loading the integration and use `desk_prompt_info`, which prints `misty-ember/src/api` inside a workspace and nothing elsewhere:
-
-<Tabs>
-<Tab title="zsh">
-
-```sh
-setopt prompt_subst   # oh-my-zsh enables this already
-PROMPT='$(desk_prompt_info) '$PROMPT
+eval "$(desk init zsh --print)"
 ```
 
 </Tab>
 <Tab title="bash">
 
 ```sh
-PS1='$(desk_prompt_info) '$PS1
+eval "$(desk init bash --print)"
 ```
 
 </Tab>
 <Tab title="fish">
 
-Call `desk_prompt_info` from your `fish_prompt` function.
+```sh
+desk init fish --print | source
+```
 
 </Tab>
 </Tabs>
 
-## What the Function Does
+Upgrading? Run `desk init` once. It replaces the old standalone eval or fish source lines with managed setup. For custom conditional, multiline, or separately sourced loaders, add `--print` yourself. Plain `desk init` now installs setup instead of printing it.
 
-- `desk new` and `desk cd` move you to the workspace desk prints.
-- `desk rm` moves you to your home directory if you deleted the workspace you were in.
-- Every other command runs the `desk` executable unchanged.
+## Custom prompts
 
-Without integration, `desk new` still works and prints the new workspace's path. Use `cd "$(desk path NAME)"` in place of `desk cd`.
+Set `DESK_PROMPT_DISABLE=1` before loading integration to turn off the prefix. `desk_prompt_info` prints the workspace and relative path, or nothing outside a workspace. Use it from your own prompt function or theme.
+
+Without integration, use `cd "$(desk info NAME --path)"` to enter a workspace.

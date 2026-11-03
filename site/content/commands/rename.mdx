@@ -1,0 +1,21 @@
+---
+title: desk rename
+description: Give a workspace a useful name once you know what it's for.
+---
+
+## Usage
+
+```text title="Usage"
+desk rename [NAME] NEW_NAME
+```
+
+With one name, rename the current workspace. With two, `NAME` identifies an existing workspace by name or unique prefix, and `NEW_NAME` is its new name.
+
+```sh
+desk rename local-test
+desk rename misty local-test
+```
+
+With shell integration, renaming the workspace you're in preserves your current subdirectory under its new name. Renaming another workspace leaves you where you are; it doesn't switch into it.
+
+You never need to choose a task name at creation: `desk new` starts with a generated name. Rename only when a useful name emerges. Run `desk list` to see the result; use the new name when switching back later.

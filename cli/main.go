@@ -15,7 +15,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-	"text/tabwriter"
+	"time"
 )
 
 var version = "dev"
@@ -23,22 +23,35 @@ var version = "dev"
 //go:embed shell
 var shells embed.FS
 
-const help = `desk — workspaces for the work in between
+const help = `desk — workspaces for temporary local work
 
 Usage:
-  desk new [REPOSITORY]   Create a workspace (empty, or a clone) and go there
-  desk cd [NAME]          Go to a workspace (needs shell integration)
-  desk path [NAME]        Print a workspace's path
-  desk list               Show workspaces
-  desk rm [NAME]          Delete a workspace after confirmation
-  desk init SHELL         Print shell integration for zsh, bash, or fish
+  desk new [REPOSITORY] [--fresh|--choose|--reuse]
+                         Create a playground or choose a repository workspace
+  desk amp [THREAD] [--copy|--follow] [--repository REPOSITORY]
+                         Bring Amp orb work locally; omit THREAD to browse
+  desk switch [NAME]      Go to a workspace (needs shell integration)
+  desk info [NAME] [--path] Show Name, Path, Source (or just the path)
+  desk list              Show workspaces grouped by repository
+  desk rename [NAME] NEW_NAME  Rename a task workspace
+  desk finish [NAME]     Mark a playground eligible for later cleanup
+  desk cleanup [--yes]   Retire safe workspaces unused for 72 hours
+  desk rm [NAME]          Retire a workspace after confirmation
+  desk init [SHELL] [--print] Install shell integration, or print its script
   desk version            Print version
 
 NAME is a workspace name or a unique prefix of one. Without NAME, desk uses the
 workspace containing the current directory. REPOSITORY is owner/repo (GitHub),
-a Git URL, or a local path; opening the same repository again reuses its workspace.
+a Git URL, or a local path. --reuse remembers most-recent reuse for that repository;
+--choose shows the chooser again. --fresh always creates an independent clone.
 
-Shell integration: add  eval "$(desk init zsh)"  to ~/.zshrc (or bash, fish).
+Removed workspaces stay in ~/.desk/garbage for 72 hours. Every desk command
+silently collects expired garbage. DESK_HOME overrides ~/.desk.
+
+Run desk init, then open a new terminal. SHELL defaults to the basename of $SHELL.
+Supported shells: zsh (including Oh My Zsh), bash, fish.
+Use desk init oh-my-zsh only to force Oh My Zsh detection.
+Use desk info [NAME] --path in scripts and shell wrappers.
 `
 
 // workspacesDir is where every workspace lives, one directory per name.
@@ -142,6 +155,7 @@ func reserve(dir string) (string, error) {
 
 var shorthand = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9_.-]*/[A-Za-z0-9][A-Za-z0-9_.-]*$`)
 var scpLike = regexp.MustCompile(`^(?:[^@/]+@)?([^:/]+):(.+)$`)
+var workspaceName = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9_-]*$`)
 
 // repository turns user input into a clone source.
 func repository(input string) (string, error) {
@@ -190,9 +204,14 @@ func gitEnv() []string {
 	return env
 }
 
-func git(dir string, args ...string) string {
+func gitCommand(dir string, args ...string) *exec.Cmd {
 	cmd := exec.Command("git", append([]string{"-C", dir}, args...)...)
 	cmd.Env = gitEnv()
+	return cmd
+}
+
+func git(dir string, args ...string) string {
+	cmd := gitCommand(dir, args...)
 	b, _ := cmd.Output()
 	return strings.TrimSpace(string(b))
 }
@@ -211,16 +230,6 @@ func create(dir, input string, stderr io.Writer) (string, error) {
 		if source, err = repository(input); err != nil {
 			return "", err
 		}
-		all, err := names(dir)
-		if err != nil {
-			return "", err
-		}
-		for _, n := range all {
-			if o := origin(filepath.Join(dir, n)); o != "" && sourceKey(o) == sourceKey(source) {
-				fmt.Fprintf(stderr, "desk: %s already has %s\n", n, o)
-				return filepath.Join(dir, n), nil
-			}
-		}
 	}
 	name, err := reserve(dir)
 	if err != nil {
@@ -236,12 +245,18 @@ func create(dir, input string, stderr io.Writer) (string, error) {
 			return "", fmt.Errorf("clone failed: %w", err)
 		}
 	}
+	if err := recordUse(dir, name); err != nil {
+		return "", err
+	}
 	fmt.Fprintf(stderr, "desk: created %s\n", name)
 	return path, nil
 }
 
 func remove(dir, name string, in io.Reader, stderr io.Writer) error {
 	path := filepath.Join(dir, name)
+	if followActive(dir, name) {
+		return errors.New("stop live follow before removing this workspace")
+	}
 	what := "empty"
 	if entries, _ := os.ReadDir(path); len(entries) > 0 {
 		what = "has files"
@@ -261,32 +276,42 @@ func remove(dir, name string, in io.Reader, stderr io.Writer) error {
 	if len(notes) > 0 {
 		what += "; " + strings.Join(notes, ", ")
 	}
-	fmt.Fprintf(stderr, "Delete %s (%s)? [y/N] ", name, what)
+	fmt.Fprintf(stderr, "Remove %s (%s)? Retain in garbage for 72 hours. [y/N] ", name, what)
 	answer, _ := bufio.NewReader(in).ReadString('\n')
 	if a := strings.ToLower(strings.TrimSpace(answer)); a != "y" && a != "yes" {
 		return errors.New("nothing deleted")
 	}
-	if err := os.RemoveAll(path); err != nil {
+	err := lifecycleLock(dir, func() error {
+		if followActive(dir, name) {
+			return errors.New("stop live follow before removing this workspace")
+		}
+		return trashWorkspace(dir, name)
+	})
+	if err != nil {
 		return err
 	}
-	fmt.Fprintf(stderr, "desk: deleted %s\n", name)
+	fmt.Fprintf(stderr, "desk: moved %s to garbage (retained for 72 hours)\n", name)
 	return nil
 }
 
 func run(args []string, in io.Reader, out, stderr io.Writer) error {
+	// Even help/version invocations collect expired garbage, without chatter.
+	if dir, err := workspacesDir(); err == nil {
+		collectGarbage(dir, time.Now())
+	}
 	command, rest := "help", []string(nil)
 	if len(args) > 0 {
 		command, rest = args[0], args[1:]
 	}
-	maxArgs := map[string]int{"new": 1, "path": 1, "rm": 1, "list": 0, "init": 1, "version": 0, "help": 0, "--help": 0, "-h": 0}
+	maxArgs := map[string]int{"new": 2, "amp": 4, "info": 2, "rm": 1, "rename": 2, "finish": 1, "cleanup": 1, "_visit": 1, "list": 0, "init": 2, "version": 0, "help": 0, "--help": 0, "-h": 0}
 	limit, ok := maxArgs[command]
-	if command == "cd" {
-		return errors.New(`desk cd needs shell integration: eval "$(desk init zsh)" (or bash, fish); or cd "$(desk path NAME)"`)
+	if command == "switch" {
+		return errors.New("desk switch needs shell integration: run desk init, then open a new terminal")
 	}
 	if !ok {
 		return fmt.Errorf("unknown command %q; see desk help", command)
 	}
-	if len(rest) > limit || (command == "init" && len(rest) != 1) {
+	if len(rest) > limit {
 		return fmt.Errorf("wrong arguments for %s; see desk help", command)
 	}
 	arg := ""
@@ -301,12 +326,15 @@ func run(args []string, in io.Reader, out, stderr io.Writer) error {
 		fmt.Fprintln(out, version)
 		return nil
 	case "init":
-		script, err := shells.ReadFile("shell/desk." + arg)
+		return initShell(rest, out)
+	}
+	pathOnly := false
+	if command == "info" {
+		var err error
+		arg, pathOnly, err = optionalFlag(rest, "--path")
 		if err != nil {
-			return fmt.Errorf("unsupported shell %q; use zsh, bash, or fish", arg)
+			return err
 		}
-		_, err = out.Write(script)
-		return err
 	}
 	dir, err := workspacesDir()
 	if err != nil {
@@ -314,12 +342,59 @@ func run(args []string, in io.Reader, out, stderr io.Writer) error {
 	}
 	switch command {
 	case "new":
-		path, err := create(dir, arg, stderr)
+		path, err := openWorkspace(dir, rest, in, stderr)
 		if err != nil {
 			return err
 		}
 		fmt.Fprintln(out, path)
-	case "path", "rm":
+	case "amp":
+		return ampWorkspace(dir, rest, in, out, stderr)
+	case "cleanup":
+		if arg != "" && arg != "--yes" {
+			return errors.New("use desk cleanup [--yes]")
+		}
+		return cleanup(dir, arg == "--yes", in, stderr)
+	case "rename":
+		if len(rest) == 0 {
+			return errors.New("use desk rename [NAME] NEW_NAME")
+		}
+		query, newName := "", rest[len(rest)-1]
+		if len(rest) == 2 {
+			query = rest[0]
+		}
+		name, err := resolve(dir, query)
+		if err != nil {
+			return err
+		}
+		path, err := renameWorkspace(dir, name, newName)
+		if err != nil {
+			return err
+		}
+		fmt.Fprintln(out, path)
+	case "finish", "_visit":
+		name, err := resolve(dir, arg)
+		if err != nil {
+			return err
+		}
+		if command == "_visit" {
+			return recordUse(dir, name)
+		}
+		err = lifecycleLock(dir, func() error {
+			if err := writeUse(dir, name); err != nil {
+				return err
+			}
+			s, err := readState(dir, name)
+			if err != nil {
+				return err
+			}
+			s.Disposable = true
+			return writeJSON(statePath(dir, name), s)
+		})
+		if err != nil {
+			return err
+		}
+		fmt.Fprintf(stderr, "desk: marked %s finished; eligible after 72 hours unused (Git safety checks still apply)\n", name)
+	case "info", "rm":
 		name, err := resolve(dir, arg)
 		if err != nil {
 			return err
@@ -327,29 +402,18 @@ func run(args []string, in io.Reader, out, stderr io.Writer) error {
 		if command == "rm" {
 			return remove(dir, name, in, stderr)
 		}
-		fmt.Fprintln(out, filepath.Join(dir, name))
+		path := filepath.Join(dir, name)
+		if pathOnly {
+			fmt.Fprintln(out, path)
+		} else {
+			source := origin(path)
+			if source == "" {
+				source = "scratch"
+			}
+			fmt.Fprintf(out, "Name: %s\nPath: %s\nSource: %s\n", name, path, source)
+		}
 	case "list":
-		all, err := names(dir)
-		if err != nil {
-			return err
-		}
-		if len(all) == 0 {
-			fmt.Fprintln(stderr, "No workspaces yet. Create one with desk new.")
-			return nil
-		}
-		here := current(dir)
-		t := tabwriter.NewWriter(out, 0, 4, 2, ' ', 0)
-		for _, n := range all {
-			marker, source := " ", "scratch"
-			if n == here {
-				marker = "*"
-			}
-			if o := origin(filepath.Join(dir, n)); o != "" {
-				source = o
-			}
-			fmt.Fprintf(t, "%s %s\t%s\n", marker, n, source)
-		}
-		return t.Flush()
+		return listWorkspaces(dir, out, stderr)
 	}
 	return nil
 }

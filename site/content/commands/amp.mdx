@@ -1,0 +1,39 @@
+---
+title: desk amp
+description: Copy or follow an Amp task in a fresh local workspace.
+---
+
+## Usage
+
+```text title="Usage"
+desk amp [THREAD] [--copy|--follow] [--repository REPOSITORY]
+```
+
+## Arguments and modes
+
+| Argument or flag | Behavior |
+| --- | --- |
+| `THREAD` | Thread URL or ID. Omit it to browse recent tasks. |
+| `--copy` | Apply a snapshot via `amp sync --apply`; leave the work locally to edit. |
+| `--follow` | Follow live changes in the foreground; stopping restores the pre-sync checkout. |
+| `--repository REPOSITORY` | Explicit clone source when thread repository metadata is missing or insufficient. |
+
+Omit both mode flags to choose interactively. Use only one mode flag. desk automatically creates a fresh independent clone from thread metadata or the explicit repository fallback; it does not reuse your existing workspaces.
+
+## Requirements and limits
+
+- Git and an installed, authenticated Amp CLI are required.
+- Copy and live sync include uncommitted and unpushed work without pushing.
+- Dependencies, services, and secrets are not replicated.
+- Follow owns the checkout: don't edit locally. Use `desk switch NAME` in a separate terminal to run setup and tests while the foreground sync continues.
+
+## Examples
+
+```sh
+desk amp
+desk amp THREAD --copy
+desk amp THREAD --follow
+desk amp THREAD --copy --repository owner/repo
+```
+
+Replace `THREAD` with a thread URL or ID. See [Test Amp work locally](/docs/amp/) for the full workflow and the distinction between stopping follow and keeping a copy.

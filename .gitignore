@@ -1,5 +1,7 @@
 /bin/
 /dist/
+/site/.astro/
+/site/dist/
 /site/node_modules/
 /site/.next/
 /site/out/

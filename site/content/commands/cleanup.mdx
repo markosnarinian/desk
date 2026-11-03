@@ -1,0 +1,28 @@
+---
+title: desk cleanup
+description: Preview and remove eligible inactive workspaces, with the same safety checks in unattended mode.
+---
+
+## Usage
+
+```text title="Usage"
+desk cleanup [--yes]
+```
+
+## Eligibility
+
+Only managed workspaces inactive for at least 72 hours are considered. Cleanup excludes untracked, uncommitted, and ignored files (including nested repositories), stashes, unpushed commits (including other branches, tags, and detached HEAD), Git inspection failures, detectable running processes, and live Amp follow. Scratch workspaces without a remote also require [`desk finish`](/commands/finish/) first; finish never bypasses Git safety checks.
+
+Directories without state stay out of cleanup until explicitly used through `switch`, selected with `new`, or marked with `finish`. Checks make no network requests and use locally known remote-tracking refs, not a guarantee of what the remote server still holds. Review ignored files and use explicit `rm` if needed.
+
+Activity comes from saved file/directory changes, recorded `new`/`switch` visits, and detectable processes—not every editor keystroke or unsaved buffer.
+
+## Confirmation
+
+The default previews candidates and asks to confirm removal of all of them. `--yes` skips that prompt while applying exactly the same eligibility checks.
+
+## Retention
+
+Candidates move to `~/.desk/garbage` (`DESK_HOME` overrides the data root) for 72 hours from removal. Every desk invocation silently collects expired garbage. No daemon runs.
+
+See [cleanup and retention](/docs/cleanup/) for the safety model. For explicit removal even with local-only work, use [`desk rm`](/commands/rm/) and confirm its prompt.

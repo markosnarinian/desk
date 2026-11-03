@@ -1,46 +1,38 @@
 ---
 title: desk init
-description: Print the shell integration script for zsh, bash, or fish.
+description: Set up zsh (including Oh My Zsh), bash, or fish automatically.
 ---
 
 ## Usage
 
-```text title="Usage"
-desk init SHELL
+```sh
+desk init [SHELL] [--print]
 ```
 
-## Arguments
+`SHELL` is `zsh`, `bash`, or `fish`. Leave it out to detect your shell from `$SHELL`. Zsh setup includes automatic Oh My Zsh detection.
 
-<ParamField name="SHELL" type="zsh | bash | fish" required>
-The shell to print integration for.
-</ParamField>
-
-## Behavior
-
-Prints a script for your shell's startup file to load. It defines the `desk` shell function, which lets `desk new` and `desk cd` change your directory, adds the current workspace to your prompt, and completes commands and workspace names. See [Shell integration](/docs/shell-integration/).
-
-## Examples
-
-<Tabs>
-<Tab title="zsh">
+## Automatic setup
 
 ```sh
-echo 'eval "$(desk init zsh)"' >> ~/.zshrc
+desk init
 ```
 
-</Tab>
-<Tab title="bash">
+Updates your shell startup configuration to load directory switching, the workspace prompt, and completion. It preserves existing configuration and avoids duplicate setup. Open a new terminal afterward.
+
+Only if Oh My Zsh detection misses your setup, force it with:
 
 ```sh
-echo 'eval "$(desk init bash)"' >> ~/.bashrc
+desk init oh-my-zsh
 ```
 
-</Tab>
-<Tab title="fish">
+This uses the same zsh integration, not additional features. See [Shell integration](/docs/shell-integration/) for setup locations and detection.
+
+## Print without installing
+
+Use `--print` for manual setup or to load integration in the current shell:
 
 ```sh
-echo 'desk init fish | source' >> ~/.config/fish/config.fish
+eval "$(desk init zsh --print)"
 ```
 
-</Tab>
-</Tabs>
+For fish, use `desk init fish --print | source`. No startup files are changed in print mode.

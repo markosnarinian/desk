@@ -39,11 +39,11 @@ Local paths must start with `/`, `./`, or `../`. They are converted to an absolu
 </Tab>
 </Tabs>
 
-desk runs `git clone` into a new workspace and takes you there. Authentication uses your normal Git and SSH configuration.
+For a new clone, desk runs `git clone` into an independently named workspace and takes you there. Authentication uses your normal Git and SSH configuration. No task name is required.
 
 ## Return to It
 
-Running `desk new` again with the same repository takes you back to the existing workspace instead of cloning a second copy, however you spell it:
+By default, `desk new REPOSITORY` offers existing workspaces for that repository alongside a new clone. Different spellings identify the same source:
 
 ```sh
 desk new octocat/Hello-World
@@ -53,7 +53,17 @@ desk new git@github.com:octocat/Hello-World.git
 
 desk compares each workspace's Git `origin` by host and path, ignoring the scheme, user, and a trailing `.git`. Path case is ignored on GitHub, where it doesn't matter.
 
-desk does **not** fetch, pull, or reset when it returns to a clone. Update it yourself with Git. You can also use `desk cd NAME` directly.
+Choose explicitly when you already know what you need:
+
+```sh
+desk new owner/repo --fresh   # independent clone for another experiment
+desk new owner/repo --reuse   # remember reuse-MRU for this repository
+desk new owner/repo --choose  # chooser this time, keep remembered preference
+```
+
+`--reuse` returns to the most recently used workspace for that repository, or creates one if needed. Later unflagged invocations reuse it too. `--fresh` requests a new clone; `--choose` overrides the remembered preference for just this invocation. Use only one of these flags at a time.
+
+desk does **not** fetch, pull, or reset when it returns to a clone. Update it yourself with Git. You can also use `desk switch NAME` directly.
 
 ## When a Clone Fails
 
@@ -61,7 +71,7 @@ If `git clone` fails, desk removes the new workspace and reports Git's error. Fi
 
 ## Before Deleting
 
-`desk rm` shows uncommitted changes and unpushed commits before asking, but deletes whatever you confirm. If you're unsure, check first:
+For routine clearing, use [cleanup](/docs/cleanup/): it excludes local-only work and active workspaces. `desk rm` is explicit removal: it shows a summary, asks, and moves whatever you confirm to garbage for 72 hours, even local-only work. If you're unsure, check first:
 
 ```sh
 git status --short
