@@ -17,5 +17,5 @@ fi
 echo 'Installing site dependencies from lockfile'
 npm --prefix "$root/site" ci --no-audit --no-fund
 echo 'Building CLI and site preview'
-(cd "$root/cli" && go build -o "$root/bin/desk" .)
+go -C "$root" build -o "$root/bin/desk" ./cmd/desk
 npm --prefix "$root/site" run build

@@ -174,7 +174,7 @@ export function Tab({ children }: TabProps) {
 
 const languageLabels: Record<string, string> = { sh: "Terminal", bash: "Terminal", text: "Output" }
 
-function CodeBlock(props: ComponentProps<"pre"> & { "data-language"?: string; "data-code"?: string; "data-title"?: string }) {
+export function CodeBlock(props: ComponentProps<"pre"> & { "data-language"?: string; "data-code"?: string; "data-title"?: string }) {
   const { children, className, style, "data-language": language = "text", "data-code": code = "", "data-title": title } = props
   return (
     <Box className="not-prose" my="6" borderWidth="1px" rounded="lg" overflow="hidden" bg="bg.subtle">

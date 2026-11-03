@@ -2,8 +2,10 @@ name: Verify desk
 
 on:
   push:
+    branches: ['**']
   pull_request:
   workflow_dispatch:
+  workflow_call:
 
 permissions:
   contents: read
@@ -14,9 +16,6 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
-    defaults:
-      run:
-        working-directory: cli
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -32,6 +31,8 @@ jobs:
       - run: test -z "$(gofmt -l .)"
       - run: go vet ./...
       - run: go test -race -count=1 ./...
+      - run: scripts/install_test.sh
+      - run: python3 scripts/distribution_test.py
 
   site:
     runs-on: ubuntu-latest
@@ -54,7 +55,6 @@ jobs:
           path: site/out/
 
   binaries:
-    needs: [cli, site]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -62,8 +62,21 @@ jobs:
         with:
           go-version: '1.27.3'
           cache: false
-      - run: scripts/release.sh "ci-${GITHUB_SHA::12}"
+      - name: Build archives
+        run: |
+          version="ci-${GITHUB_SHA::12}"
+          if [[ "$GITHUB_REF_TYPE" == tag ]]; then
+            version="$GITHUB_REF_NAME"
+            [[ "$version" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || exit 1
+          fi
+          scripts/release.sh "$version"
+          (cd dist && sha256sum -c SHA256SUMS)
+          mkdir "$RUNNER_TEMP/desk-smoke"
+          tar -xzf "dist/desk_${version}_linux_amd64.tar.gz" -C "$RUNNER_TEMP/desk-smoke"
+          test "$("$RUNNER_TEMP/desk-smoke/desk" version)" = "$version"
+          cmp LICENSE "$RUNNER_TEMP/desk-smoke/LICENSE"
       - uses: actions/upload-artifact@v4
         with:
-          name: desk-binaries
+          name: desk-binaries-${{ github.sha }}
           path: dist/
+          retention-days: 30

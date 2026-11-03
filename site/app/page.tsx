@@ -21,9 +21,16 @@ import { CopyButton } from "@/components/copy-button"
 import { githubUrl } from "@/components/docs-shell"
 import { iconFor } from "@/components/icons"
 import { Logo } from "@/components/logo"
+import { CodeBlock, Tab, Tabs } from "@/components/mdx"
 import { ColorModeButton } from "@/components/ui/color-mode"
 
 export const metadata = { alternates: { canonical: "/" } }
+
+const installationMethods = [
+  { title: "Homebrew", command: "brew install markosnarinian/tap/desk && desk init", text: "macOS and Linux. Homebrew handles updates." },
+  { title: "One-liner", command: "curl -fsSL https://raw.githubusercontent.com/markosnarinian/desk/main/site/public/install.sh | sh", text: "No Go or sudo. Verifies the download and sets up your shell." },
+  { title: "Go", command: 'GOBIN="$HOME/.local/bin" go install github.com/markosnarinian/desk/cmd/desk@latest\n"$HOME/.local/bin/desk" init', text: "Go 1.24 or newer. Installs the latest tagged version." },
+]
 
 const features = [
   { icon: "scratch", title: "Build a playground", text: "Try a library, generate a throwaway scaffold, or prototype an idea. Start with desk new, then use your usual tools." },
@@ -116,8 +123,8 @@ export default function Home() {
             </Text>
             <HStack gap="3" flexWrap="wrap" justify="center">
               <Button asChild size="lg" colorPalette="teal">
-                <NextLink href="/docs/quickstart/">
-                  Get started <LuArrowRight />
+                <NextLink href="#install">
+                  Install desk <LuArrowRight />
                 </NextLink>
               </Button>
               <Button asChild size="lg" variant="outline">
@@ -258,24 +265,37 @@ export default function Home() {
           </Container>
         </Box>
 
-        <Container maxW="6xl" py={{ base: "16", md: "24" }}>
+        <Container id="install" maxW="6xl" py={{ base: "16", md: "24" }} scrollMarginTop="16">
           <Card.Root variant="subtle" colorPalette="teal" bg="teal.subtle" textAlign="center">
             <Card.Body alignItems="center" gap="4" py={{ base: "10", md: "14" }}>
               <Heading as="h2" size={{ base: "2xl", md: "3xl" }}>
-                Your next experiment doesn't need a permanent address
+                Install desk your way
               </Heading>
               <Text color="fg.muted" maxW="xl">
-                Build desk, run desk init, and open a new terminal. Start with an empty workspace.
+                Choose an install method, then open a new terminal.
+                Zsh (including Oh My Zsh), bash, and fish.
               </Text>
-              <Code size="lg" px="3" py="2">
-                desk new
-              </Code>
+              <Text textStyle="sm" color="fg.muted" maxW="xl">
+                First release pending. For now, build from source using the installation guide.
+              </Text>
+              <Box w="full" maxW="3xl" minW="0" textAlign="start">
+                <Tabs>
+                  {installationMethods.map((method) => (
+                    <Tab key={method.title} title={method.title}>
+                      <Text color="fg.muted" textStyle="sm">{method.text}</Text>
+                      <CodeBlock data-language="sh" data-code={method.command} style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
+                        <code>{method.command}</code>
+                      </CodeBlock>
+                    </Tab>
+                  ))}
+                </Tabs>
+              </Box>
               <HStack gap="3" mt="2" flexWrap="wrap" justify="center">
                 <Button asChild colorPalette="teal">
-                  <NextLink href="/docs/installation/">Install desk</NextLink>
+                  <NextLink href="/docs/installation/">Installation guide</NextLink>
                 </Button>
                 <Button asChild variant="outline" bg="bg">
-                  <NextLink href="/docs/introduction/">Read the docs</NextLink>
+                  <NextLink href="/docs/quickstart/">Try your first workspace</NextLink>
                 </Button>
               </HStack>
             </Card.Body>

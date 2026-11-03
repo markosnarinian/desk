@@ -19,10 +19,10 @@ for target in darwin/amd64 darwin/arm64 linux/amd64 linux/arm64; do
   name="desk_${version}_${os}_${arch}"
   mkdir -p "$stage/$name"
   (
-    cd "$root/cli"
+    cd "$root"
     CGO_ENABLED=0 GOOS="$os" GOARCH="$arch" go build \
       -trimpath -buildvcs=false -ldflags "-s -w -X main.version=$version" \
-      -o "$stage/$name/desk" .
+      -o "$stage/$name/desk" ./cmd/desk
   )
   cp "$root/LICENSE" "$stage/$name/LICENSE"
   tar -czf "$output/$name.tar.gz" -C "$stage/$name" desk LICENSE

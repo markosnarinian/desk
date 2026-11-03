@@ -1,72 +1,107 @@
 ---
 title: Installation
-description: Build desk from source and put it on your PATH on macOS or Linux.
+description: Install desk with Homebrew, a verified binary download, Go, or a source build.
 ---
 
-## Requirements
+desk runs on macOS and Linux, on amd64 and arm64. Git is needed for clones; an authenticated [Amp CLI](https://ampcode.com) is needed for `desk amp`.
 
-- **macOS or Linux**, on amd64 or arm64.
-- **Go 1.24 or newer**, to build the binary. desk has no Go dependencies outside the standard library.
-- **Git**, to use repository workspaces. Scratch workspaces do not need it.
-- **Installed, authenticated Amp CLI**, only for `desk amp`.
+<Callout type="warning" title="First release pending">
+The release installation paths below are prepared but not published yet. Use [Build from source](#build-from-source) today.
+</Callout>
 
-desk is a single executable. It needs no daemon or manual configuration, and Go is not needed after the build. It stores workspace metadata and reuse preferences in its [data root](/docs/configuration/), outside project files.
+## Choose an install method
 
-desk is licensed under GNU AGPL v3. These steps require source access; no public binary releases have been published yet.
+<Tabs>
+<Tab title="Homebrew">
+Use your package manager. No Go required.
 
-## Build from Source
+```sh
+brew install markosnarinian/tap/desk && desk init
+```
 
-<Steps>
-<Step title="Get the source">
-Clone the repository and change into it.
+Homebrew manages the binary. `desk init` sets up your shell without changing your theme.
+</Tab>
+<Tab title="One-liner">
+Download a prebuilt binary, verify its SHA-256 checksum, and set up your shell. No Go or sudo required.
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/markosnarinian/desk/main/site/public/install.sh | sh
+```
+
+Installs into `~/.local/bin`. [Read the installer](/install.sh) before running it if you prefer.
+
+Choose a version or directory, or skip automatic shell setup:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/markosnarinian/desk/main/site/public/install.sh | DESK_VERSION=v0.1.0 DESK_INSTALL_DIR="$HOME/.local/bin" sh -s -- --no-init
+```
+
+`v0.1.0` is an example; choose a [published release](https://github.com/markosnarinian/desk/releases). Failed downloads or checksums leave an existing binary unchanged.
+</Tab>
+<Tab title="Go">
+Requires Go 1.24 or newer. No clone needed.
+
+```sh
+GOBIN="$HOME/.local/bin" go install github.com/markosnarinian/desk/cmd/desk@latest
+"$HOME/.local/bin/desk" init
+```
+
+Use `@v0.1.0` instead of `@latest` to pin a published version. You can choose another absolute `GOBIN`; run its `desk init` afterward.
+</Tab>
+</Tabs>
+
+Open a new terminal after setup. desk supports zsh (including Oh My Zsh), bash, and fish. To choose explicitly, run `desk init zsh`, `desk init bash`, or `desk init fish`.
+
+Check the installation, then try the [Quickstart](/docs/quickstart/):
+
+```sh
+desk version
+desk new
+```
+
+## Build from source
+
+Requires Go 1.24 or newer and Git. Go is not needed after installation.
 
 ```sh
 git clone https://github.com/markosnarinian/desk.git
 cd desk
-```
-</Step>
-<Step title="Build the binary">
-Build into a directory on your PATH. This example uses `~/.local/bin`.
-
-```sh
 mkdir -p "$HOME/.local/bin"
-go -C cli build -trimpath -o "$HOME/.local/bin/desk" .
-```
-</Step>
-<Step title="Set up your shell">
-Run the binary directly; you don't need to edit PATH or a startup file yourself.
-
-```sh
+go build -trimpath -o "$HOME/.local/bin/desk" ./cmd/desk
 "$HOME/.local/bin/desk" init
 ```
 
-desk detects zsh (including Oh My Zsh), bash, or fish and installs shell integration. To choose explicitly, use `init zsh`, `init bash`, or `init fish`.
-</Step>
-<Step title="Verify">
-Open a new terminal and check that desk runs.
+A source build reports a development version. See [Shell integration](/docs/shell-integration/) for custom setup.
+
+## Manual downloads
+
+Download the matching archive and `SHA256SUMS` from [Releases](https://github.com/markosnarinian/desk/releases). Check its SHA-256 with `sha256sum` on Linux or `shasum -a 256` on macOS against the manifest before extracting. Each archive includes `desk` and `LICENSE`. Put `desk` in a directory on your PATH and run `desk init`.
+
+| Platform | Archive suffix |
+| --- | --- |
+| Apple silicon Mac | `darwin_arm64.tar.gz` |
+| Intel Mac | `darwin_amd64.tar.gz` |
+| Linux x86-64 | `linux_amd64.tar.gz` |
+| Linux ARM64 | `linux_arm64.tar.gz` |
+
+Release binaries are not signed or notarized. Checksums detect a damaged or mismatched download; they are not a publisher signature.
+
+## Update
+
+With Homebrew:
 
 ```sh
-desk version
+brew update && brew upgrade desk
 ```
 
-A source build prints `dev`. Continue to the [Quickstart](/docs/quickstart/) for a first experiment, or [Shell integration](/docs/shell-integration/) for custom setup.
-</Step>
-</Steps>
-
-## Release Archives
-
-The repository includes a script that builds archives for macOS and Linux on amd64 and arm64, plus a `SHA256SUMS` file:
-
-```sh
-scripts/release.sh v0.1.0
-```
-
-Each archive contains the `desk` binary and `LICENSE`. Check the archive against `SHA256SUMS` before extracting it. These binaries are not signed or notarized, and no public releases have been published yet, so building from source is the supported way to install.
+Otherwise, rerun your install command. Run `desk init` again if the binary moved. Your workspaces stay in [the data root](/docs/configuration/).
 
 ## Uninstall
 
-Remove desk-managed blocks from your shell startup files, then delete the binary. For Oh My Zsh, also remove the managed block in `plugins/desk/desk.plugin.zsh` and any manually added `desk` plugin entry. Delete the plugin file if nothing else remains. Your workspaces stay in `~/.desk/workspaces/` until you delete them.
+Use `brew uninstall desk` for Homebrew, or remove the binary you installed:
 
 ```sh
 rm "$HOME/.local/bin/desk"
 ```
+
+Remove desk-managed blocks from your shell startup files. For Oh My Zsh, also remove the managed block in `plugins/desk/desk.plugin.zsh` and any manually added `desk` plugin entry; delete the plugin file only if nothing else remains. The one-liner also installs `desk.LICENSE` beside the binary; remove it when uninstalling. Your workspaces are not deleted. desk is licensed under GNU AGPL v3.

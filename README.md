@@ -14,19 +14,45 @@ directories and Git clones with two-word names; automatic shell setup for zsh
 (including Oh My Zsh), bash, and fish. Licensed under [GNU AGPL v3](LICENSE).
 No public binary releases have been published.
 
-## Build and try it
+## Install
 
-Requires Go 1.24+; repositories also need Git.
+The release paths below are prepared for the first release. Until it is published,
+use the source build below.
+
+**Homebrew** — macOS and Linux, no Go required:
 
 ```sh
+brew install markosnarinian/tap/desk && desk init
+```
+
+**One-liner** — verified binary download and automatic shell setup, no sudo:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/markosnarinian/desk/main/site/public/install.sh | sh
+```
+
+**Go** — Go 1.24+, without cloning:
+
+```sh
+GOBIN="$HOME/.local/bin" go install github.com/markosnarinian/desk/cmd/desk@latest
+"$HOME/.local/bin/desk" init
+```
+
+**From source** — Go 1.24+ and Git:
+
+```sh
+git clone https://github.com/markosnarinian/desk.git
+cd desk
 mkdir -p "$HOME/.local/bin"
-go -C cli build -trimpath -o "$HOME/.local/bin/desk" .
+go build -trimpath -o "$HOME/.local/bin/desk" ./cmd/desk
 "$HOME/.local/bin/desk" init
 ```
 
 Open a new terminal. `desk init` detects your shell and updates its startup
-configuration. Zsh setup also detects Oh My Zsh. Or choose `desk init zsh`,
-`desk init bash`, or `desk init fish`.
+configuration, including Oh My Zsh. Or choose `desk init zsh`, `desk init bash`,
+or `desk init fish`. The one-liner and Go examples install into `~/.local/bin`.
+See [installation](site/content/docs/installation.mdx) for version pinning,
+manual downloads, updating, and uninstalling.
 
 ## Use it for real work
 
@@ -104,14 +130,16 @@ recognizes the same repository however its URL is spelled. See the
 
 ## Development and documentation
 
-- `cli/`: Go executable and tests; no external Go dependencies. Shell
-  integration scripts live in `cli/shell/`, embedded and printed by `desk init --print`.
+- `cmd/desk/`: Go executable and tests; no external Go dependencies. Shell
+  integration scripts live in `cmd/desk/shell/`, embedded and printed by `desk init --print`.
 - `site/`: Next.js + Chakra UI website: landing page, documentation, and a
   command reference, written in MDX.
 - `scripts/release.sh`: local release archives and SHA-256 checksums.
 
 ```sh
-(cd cli && go test -race ./... && go vet ./...)
+go test -race ./... && go vet ./...
+scripts/install_test.sh
+python3 scripts/distribution_test.py
 npm --prefix site ci
 npm --prefix site run check
 npm --prefix site run build
@@ -126,7 +154,7 @@ Canonical URLs use `SITE_URL` or Vercel's production URL. See
 `.agents/setup` installs the pinned Go toolchain and builds the CLI and site in
 Linux amd64 Amp orbs. It needs no secrets. Run it from the repository root.
 
-## Distribution, without publication
+## Distribution
 
 ```sh
 scripts/release.sh v0.1.0
@@ -138,10 +166,24 @@ before extracting; put the executable in a directory on PATH. These binaries are
 not signed or notarized. Source builds are the current installation path.
 
 The GitHub Actions workflow tests on Linux and macOS, checks/builds the site,
-and builds all four binaries as downloadable CI artifacts. It does not publish
-releases or deploy the site. Website deployment uses the Vercel `desk` project;
-see [website maintenance](docs/website.md) for GitHub connection and build settings.
-Release publication and signing are separate decisions.
+and independently builds all four binaries on every branch push. Commit-labelled
+CI artifacts are retained for 30 days; normal pushes do not publish a stable release.
+
+Pushing a stable `vX.Y.Z` tag runs verification before publishing archives,
+checksums, and a generated `desk.rb` Homebrew formula. The release stays a draft
+until all assets are uploaded. The tap update runs only after publication.
+Before releasing, set the `HOMEBREW_TAP_TOKEN` GitHub Actions secret with
+contents-write access limited to `markosnarinian/homebrew-tap`. Without it,
+release publication can succeed but the tap-update job fails explicitly. The
+generated formula is also attached to the release for manual tap updates.
+
+`site/public/install.sh` is served as `/install.sh` and can also be fetched from
+GitHub. It verifies the selected archive before replacing a binary and supports
+`DESK_VERSION`, `DESK_INSTALL_DIR`, and `--no-init`.
+
+Website deployment uses the Vercel `desk` project; see
+[website maintenance](docs/website.md). Release publication, tap pushes, and
+signing require deliberate action; configuring the workflows publishes nothing.
 
 ## Deliberately absent, for now
 

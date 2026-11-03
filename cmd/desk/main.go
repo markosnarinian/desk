@@ -14,6 +14,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"runtime/debug"
 	"strings"
 	"time"
 )
@@ -323,7 +324,13 @@ func run(args []string, in io.Reader, out, stderr io.Writer) error {
 		fmt.Fprint(out, help)
 		return nil
 	case "version":
-		fmt.Fprintln(out, version)
+		v := version
+		if v == "dev" {
+			if info, ok := debug.ReadBuildInfo(); ok && info.Main.Version != "" && info.Main.Version != "(devel)" {
+				v = info.Main.Version
+			}
+		}
+		fmt.Fprintln(out, v)
 		return nil
 	case "init":
 		return initShell(rest, out)
