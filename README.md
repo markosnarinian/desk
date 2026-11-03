@@ -56,11 +56,14 @@ requires seven days in quarantine and repeats safety checks. Nothing happens
 automatically on shell exit. There is no force flag. Session locks cannot detect
 every external process, which is why your quiescence acknowledgment is required.
 
-Storage defaults to `~/.local/share/desk` on Linux or
-`~/Library/Application Support/desk` on macOS. `XDG_DATA_HOME` is respected on
-Linux; `DESK_HOME` overrides the root on either OS and must be absolute. Do not use
-OS-managed temporary storage for work you want to resume. Test fixtures use
-temporary storage only to isolate disposable tests.
+Storage defaults to `~/.desk` on both Linux and macOS, including workspaces,
+registry, locks, and quarantine. `DESK_HOME` overrides the root and must be
+absolute; `XDG_DATA_HOME` is not used. Configuration belongs in `~/.config/desk/`;
+desk currently has no configuration file and does not create that directory.
+Existing data in the previous platform-specific locations is not moved
+automatically; see [storage and configuration](site/src/content/docs/configuration.md).
+Do not use OS-managed temporary storage for work you want to resume. Test fixtures
+use temporary storage only to isolate disposable tests.
 
 ## Development and documentation
 

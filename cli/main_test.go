@@ -20,6 +20,43 @@ func invoke(t *testing.T, args ...string) (string, error) {
 	return strings.TrimSpace(out.String()), err
 }
 
+func TestStorageLocation(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("XDG_DATA_HOME", filepath.Join(home, "other-data"))
+	for _, override := range []string{"", filepath.Join(home, "custom"), "relative"} {
+		t.Run("DESK_HOME="+override, func(t *testing.T) {
+			t.Setenv("DESK_HOME", override)
+			id, err := invoke(t, "scratch", "location", "--no-enter")
+			if override == "relative" {
+				if err == nil || !strings.Contains(err.Error(), "DESK_HOME must be absolute") {
+					t.Fatalf("relative override: %v", err)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			root := override
+			if root == "" {
+				root = filepath.Join(home, ".desk")
+			}
+			for _, path := range []string{"registry.json", "registry.lock", "locks", "quarantine", filepath.Join("workspaces", id)} {
+				if _, err := os.Stat(filepath.Join(root, path)); err != nil {
+					t.Fatal(err)
+				}
+			}
+			listing, err := invoke(t, "list")
+			if err != nil || !strings.Contains(listing, filepath.Join(root, "workspaces", id)) {
+				t.Fatalf("listing: %s: %v", listing, err)
+			}
+		})
+	}
+	if _, err := os.Stat(os.Getenv("XDG_DATA_HOME")); !os.IsNotExist(err) {
+		t.Fatalf("XDG_DATA_HOME must not be used: %v", err)
+	}
+}
+
 func TestScratchLifecycle(t *testing.T) {
 	root := t.TempDir()
 	t.Setenv("DESK_HOME", root)

@@ -90,8 +90,10 @@ workspace ID in the error to inspect anything left behind.
 ## A workspace is missing from the listing
 
 Check the [data-root configuration](/configuration/). A different `DESK_HOME`,
-Linux `XDG_DATA_HOME`, or user account selects a different registry. Setting a
-different root does not migrate existing workspaces.
+or user account selects a different registry. The default is now `~/.desk` on
+both platforms; earlier versions used platform-specific locations. Setting a
+different root does not migrate existing workspaces. To access an old root,
+set `DESK_HOME` to its absolute path.
 
 If desk reports a missing directory, it retains the registry entry rather than
 inventing a replacement or deleting evidence. Do not manually edit the registry

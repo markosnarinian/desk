@@ -3,8 +3,10 @@ title: Storage and configuration
 description: Find managed directories, choose a separate data root, and understand shell and Git configuration.
 ---
 
-desk has no configuration file or daemon. It uses a private application-data
-directory and a small set of environment variables.
+desk keeps managed data under `~/.desk` and reserves `~/.config/desk/` for
+configuration on both Linux and macOS. It currently has no configuration file or
+daemon, so it does not create or read the configuration directory. Settings are
+supplied through a small set of environment variables.
 
 ## Find your workspaces
 
@@ -15,10 +17,8 @@ desk list
 The `PATH` column is the actual directory location, including quarantined
 workspaces. Names are labels; generated 12-character IDs identify workspaces.
 
-| Platform | Default data root |
-| --- | --- |
-| Linux | `$XDG_DATA_HOME/desk`, or `~/.local/share/desk` if unset |
-| macOS | `~/Library/Application Support/desk` |
+The default data root is `~/.desk` on both Linux and macOS. `XDG_DATA_HOME`
+does not change this location.
 
 The root contains `workspaces/`, `quarantine/`, `locks/`, and a JSON registry.
 Do not edit the registry, replace workspace directories with symlinks, or share
@@ -31,14 +31,26 @@ For example, use a separate persistent root to try desk without mixing in your
 normal workspaces:
 
 ```sh
-export DESK_HOME="$HOME/.local/share/desk-trial"
+export DESK_HOME="$HOME/.desk-trial"
 desk scratch trial
 ```
 
 Keep the export in effect when you list, resume, or clean up that trial. Each
 root has its own registry. Changing the variable does **not** move or delete
-existing workspaces. `unset DESK_HOME` returns to the platform default; the
+existing workspaces. `unset DESK_HOME` returns to `~/.desk`; the
 trial remains in its separate root.
+
+### Existing installations
+
+Earlier versions defaulted to `$XDG_DATA_HOME/desk` (or `~/.local/share/desk`)
+on Linux and `~/Library/Application Support/desk` on macOS. desk does not
+automatically migrate or delete those directories. Set `DESK_HOME` to the
+absolute path of your old root to continue using it.
+
+To adopt the new default, first stop all desk sessions and other processes using
+the workspaces, then move the entire old root to `~/.desk` only if that destination
+does not already exist. Do not merge registries or move individual workspaces.
+Unset `DESK_HOME` and check `desk list` afterward.
 
 Do not put resumable work in OS-managed temporary directories such as `/tmp`.
 Another tool or a reboot may remove it independently of desk's safety checks.
@@ -51,7 +63,6 @@ Never run desk with `sudo`.
 | `SHELL` | Executable used for the interactive subshell; falls back to `/bin/sh` |
 | `DESK_WORKSPACE` | Set inside a desk subshell to its workspace ID |
 | `DESK_HOME` | Optional absolute data root |
-| `XDG_DATA_HOME` | Linux application-data base when `DESK_HOME` is unset; must be absolute |
 
 To choose a shell for one entry, with that executable installed:
 

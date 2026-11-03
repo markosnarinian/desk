@@ -4,8 +4,9 @@ macOS and Linux. It never deletes on shell exit and runs no background cleanup.
 ## Ownership and storage
 
 The data root is `$DESK_HOME` when set to an absolute path, otherwise
-`$XDG_DATA_HOME/desk` on Linux (default `~/.local/share/desk`) and
-`~/Library/Application Support/desk` on macOS. The root is private to the user.
+`~/.desk` on both Linux and macOS. `XDG_DATA_HOME` is not used.
+Configuration belongs in `~/.config/desk/`, separate from managed data; desk
+currently has no configuration file. The data root is private to the user.
 desk owns only directories it creates under `workspaces/<id>` and its registry,
 locks, and quarantine. It does not adopt existing directories or follow workspace
 symlinks. Workspace names are labels; generated IDs are directory names.

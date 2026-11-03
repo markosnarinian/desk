@@ -14,7 +14,6 @@ import (
 	"os/signal"
 	"path/filepath"
 	"regexp"
-	"runtime"
 	"strings"
 	"syscall"
 	"text/tabwriter"
@@ -52,17 +51,7 @@ func dataRoot() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if runtime.GOOS == "darwin" {
-		return filepath.Join(home, "Library", "Application Support", "desk"), nil
-	}
-	p := os.Getenv("XDG_DATA_HOME")
-	if p == "" {
-		p = filepath.Join(home, ".local", "share")
-	}
-	if !filepath.IsAbs(p) {
-		return "", errors.New("XDG_DATA_HOME must be absolute")
-	}
-	return filepath.Join(p, "desk"), nil
+	return filepath.Join(home, ".desk"), nil
 }
 
 func openStore() (*store, error) {
