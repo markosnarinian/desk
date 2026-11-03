@@ -24,8 +24,7 @@ for target in darwin/amd64 darwin/arm64 linux/amd64 linux/arm64; do
       -trimpath -buildvcs=false -ldflags "-s -w -X main.version=$version" \
       -o "$stage/$name/desk" .
   )
-  cp "$root/docs/safety.md" "$stage/$name/SAFETY.md"
-  tar -czf "$output/$name.tar.gz" -C "$stage/$name" desk SAFETY.md
+  tar -czf "$output/$name.tar.gz" -C "$stage/$name" desk
 done
 (
   cd "$output"

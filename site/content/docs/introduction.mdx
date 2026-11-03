@@ -1,25 +1,25 @@
 ---
 title: Introduction
-description: desk is a small command-line tool that keeps occasional local work in managed workspaces, out of your way.
+description: desk is a small command-line tool that gives quick experiments and one-off clones a named home, out of your way.
 ---
 
 ## What is desk?
 
-Most local work is planned: your main projects live where you put them. The rest is not. You try a library in an empty folder, clone a repository to check one thing, fix a typo in a project you do not usually work on. Those directories pile up, and after a few weeks you no longer know which ones are safe to delete.
+Most local work is planned: your main projects live where you put them. The rest is not. You try a library in an empty folder, clone a repository to check one thing, fix a typo in a project you do not usually work on. Those directories pile up as `test-2`, `tmp-fix`, and a third clone of the same repo.
 
-**desk** gives that in-between work a home. Every experiment or clone gets its own workspace in a private directory that desk manages. You work in it with your normal shell and tools, leave when you are done, and decide later, explicitly, what to clean up.
+**desk** gives that in-between work a home. `desk new` creates a workspace with a memorable name such as `misty-ember` and takes you there. Your prompt shows which workspace you're in, `desk cd` jumps between them, and `desk rm` deletes one when you're done.
 
 ## Quick Start
 
 <CardGroup cols={3}>
 <Card title="Installation" icon="download" href="/docs/installation/">
-Build the desk binary and put it on your PATH.
+Build the desk binary and add shell integration.
 </Card>
 <Card title="Quickstart" icon="rocket" href="/docs/quickstart/">
-Create a workspace, leave it, and preview cleanup in five minutes.
+Create, move between, and delete workspaces in two minutes.
 </Card>
 <Card title="Commands" icon="terminal" href="/commands/overview/">
-Every command, argument, and flag in one place.
+Six commands, each on one page.
 </Card>
 </CardGroup>
 
@@ -27,42 +27,22 @@ Every command, argument, and flag in one place.
 
 <CardGroup cols={2}>
 <Card title="Workspaces" icon="scratch" href="/docs/workspaces/">
-A scratch directory or an independent Git clone, identified by a 12-character ID.
+Plain directories with two-word names: empty, or a Git clone.
 </Card>
-<Card title="Sessions" icon="terminal" href="/docs/sessions/">
-desk runs your shell inside the workspace. Exiting the shell never deletes anything.
-</Card>
-<Card title="Cleanup lifecycle" icon="archive" href="/docs/cleanup-lifecycle/">
-Done, preview, quarantine, and only then purge. Every step is a separate command.
-</Card>
-<Card title="Retention rules" icon="shield" href="/docs/retention-rules/">
-The checks a workspace must pass before desk will move it.
+<Card title="Shell integration" icon="terminal" href="/docs/shell-integration/">
+`desk cd`, a prompt that shows where you are, and completion for zsh, bash, and fish.
 </Card>
 </CardGroup>
 
 ## What desk Is Not
 
-desk manages **directories**, not development environments. It does not install toolchains, run containers, or sync anything. It also deliberately leaves out:
+desk manages **directories**, not development environments. It does not install toolchains, run containers, or sync anything. It also deliberately leaves out, for now:
 
-- automatic or age-based cleanup, and anything that runs in the background;
-- `git pull` or resets when you reopen a repository;
-- Git worktrees and shell functions;
+- automatic cleanup, and anything that runs in the background;
+- `git pull` or resets when you return to a repository;
+- editor and Amp integrations;
 - Windows support.
 
 <Callout type="info">
-desk is in its initial release. It runs on macOS and Linux, and it is installed by building from source.
+desk is early and deliberately minimal. It runs on macOS and Linux, and it is installed by building from source.
 </Callout>
-
-## Next Steps
-
-<Steps>
-<Step title="Install desk">
-Follow the [installation guide](/docs/installation/) to build the binary.
-</Step>
-<Step title="Try the quickstart">
-Work through the [quickstart](/docs/quickstart/) using a separate trial data root.
-</Step>
-<Step title="Learn the cleanup rules">
-Read the [retention rules](/docs/retention-rules/) before you clean up real work.
-</Step>
-</Steps>

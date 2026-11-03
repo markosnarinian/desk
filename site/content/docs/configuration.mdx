@@ -5,65 +5,25 @@ description: Where desk stores workspaces, and the environment variables it read
 
 ## No Configuration File
 
-desk has no configuration file, daemon, or shell integration. Its behavior is fixed, and its storage location comes from a few environment variables. `~/.config/desk/` is reserved for future configuration; desk does not create or read it today.
-
-## Data Root
-
-The default data root is `~/.desk` on both Linux and macOS. It holds the workspaces, quarantine, locks, and registry. `XDG_DATA_HOME` does not change this location.
-
-desk creates the root and its subdirectories with permissions `0700`, private to your user.
+desk has no configuration file and no background process. `~/.config/desk/` is reserved for future configuration; desk does not create or read it today.
 
 ## Environment Variables
 
 <ParamField name="DESK_HOME" type="absolute path" default="~/.desk">
-Overrides the data root. Must be an absolute path. Useful for a trial root, for keeping separate sets of workspaces, or for continuing to use a root from an earlier version.
+Overrides the data root. Workspaces live in its `workspaces/` directory. Must be an absolute path. Changing it does not move existing workspaces.
 </ParamField>
-<ParamField name="SHELL" type="executable" default="/bin/sh">
-The shell desk starts inside a workspace.
-</ParamField>
-<ParamField name="DESK_WORKSPACE" type="set by desk">
-Set inside a desk session to the workspace ID. desk does not read it.
+<ParamField name="DESK_PROMPT_DISABLE" type="any value">
+Stops [shell integration](/docs/shell-integration/) from changing your prompt.
 </ParamField>
 
-To use a different shell for one session:
-
-```sh
-SHELL=/bin/bash desk enter ID
-```
-
-## Choosing a Data Root
-
-```sh
-export DESK_HOME="$HOME/.desk-work"
-```
-
-- Keep the variable set whenever you list, enter, or clean up workspaces in that root.
-- Changing it does not move or delete existing workspaces.
-- Do not use a temporary directory such as `/tmp` for work you want to keep.
-- Do not move a data root while a session is running, or share one between machines.
-
-## Existing Installations
-
-Earlier versions defaulted to `$XDG_DATA_HOME/desk` (or `~/.local/share/desk`) on Linux and `~/Library/Application Support/desk` on macOS. desk does not migrate or delete those directories. Set `DESK_HOME` to the absolute path of your old root to keep using it.
-
-To adopt the new default instead:
-
-<Steps>
-<Step title="Stop everything using your workspaces">
-Exit all desk sessions and stop editors, servers, and other processes using the workspaces.
-</Step>
-<Step title="Move the whole root">
-Move the entire old root to `~/.desk`, and only if `~/.desk` does not already exist. Do not merge registries or move individual workspaces. On Linux, for example:
-
-```sh
-mv "$HOME/.local/share/desk" "$HOME/.desk"
-```
-</Step>
-<Step title="Check the result">
-Unset `DESK_HOME` and run `desk list`.
-</Step>
-</Steps>
+Don't keep work you want to return to in OS-managed temporary storage such as `/tmp`.
 
 ## Git
 
-desk runs your installed `git` with your normal configuration and credentials. During retention checks it disables optional locks, filesystem monitors, the untracked cache, and replacement objects, and ignores `GIT_*` variables that could point Git at a different repository. `GIT_SSH`, `GIT_SSH_COMMAND`, and `GIT_ASKPASS` are kept so authentication works as usual. Git never prompts for credentials during checks.
+desk runs your installed `git` with your normal configuration, credentials, and SSH setup. It ignores inherited `GIT_DIR`, `GIT_WORK_TREE`, and `GIT_INDEX_FILE`, so running it from a Git hook can't point it at a different repository.
+
+## Earlier Versions
+
+Earlier versions kept a registry, locks, and quarantine in the data root and named workspaces with 12-character IDs. desk now ignores the registry, locks, and quarantine directory. Old workspaces still appear in `desk list` under their IDs; rename or delete them like any other directory.
+
+Platform-specific roots from before `~/.desk` became the default (`~/.local/share/desk` on Linux, `~/Library/Application Support/desk` on macOS) are not read. Set `DESK_HOME` to an old root, or move its `workspaces/` directory into `~/.desk`.

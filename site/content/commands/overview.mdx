@@ -6,45 +6,36 @@ description: Every desk command at a glance, and the conventions they share.
 ## Usage
 
 ```text title="Usage"
-desk COMMAND [ARGUMENTS] [FLAGS]
+desk COMMAND [ARGUMENT]
 ```
 
 | Command | Purpose |
 | --- | --- |
-| [`desk scratch [NAME]`](/commands/scratch/) | Create an empty workspace and enter it |
-| [`desk open REPOSITORY`](/commands/open/) | Clone a repository into a workspace, or resume it |
-| [`desk enter ID`](/commands/enter/) | Start a shell in an existing workspace |
-| [`desk list`](/commands/list/) | Show every workspace with its state and retention reason |
-| [`desk keep ID`](/commands/keep/) | Pin or unpin a workspace |
-| [`desk done ID`](/commands/done/) | Mark a workspace as a cleanup candidate |
-| [`desk gc`](/commands/gc/) | Preview or apply cleanup of finished workspaces |
-| [`desk remove ID`](/commands/remove/) | Quarantine one workspace |
-| [`desk restore ID`](/commands/restore/) | Bring a workspace back from quarantine |
-| [`desk purge ID`](/commands/purge/) | Permanently delete a quarantined workspace |
+| [`desk new [REPOSITORY]`](/commands/new/) | Create an empty workspace or a clone, and go there |
+| [`desk cd [NAME]`](/commands/cd/) | Go to a workspace |
+| [`desk path [NAME]`](/commands/path/) | Print a workspace's path |
+| [`desk list`](/commands/list/) | Show workspaces; `*` marks the current one |
+| [`desk rm [NAME]`](/commands/rm/) | Delete a workspace after confirmation |
+| [`desk init SHELL`](/commands/init/) | Print shell integration for zsh, bash, or fish |
 | [`desk version`](/commands/version/) | Print the version |
 
 `desk help`, `desk --help`, or `desk` with no arguments prints a summary.
 
 ## Conventions
 
-<ParamField name="ID" type="12 hex characters">
-Workspaces are addressed by the full ID shown in `desk list`. Names and prefixes are not accepted.
+<ParamField name="NAME" type="name or prefix">
+A workspace name such as `misty-ember`, or any prefix that matches only one workspace, such as `mis`. Leave it out to use the workspace containing your current directory.
 </ParamField>
-<ParamField name="Flags" type="anywhere">
-Flags may appear before or after arguments. Each command accepts only its own flags; anything else is an error.
-</ParamField>
-<ParamField name="--quiescent" type="flag">
-Required by every command that moves or deletes a workspace: `remove`, `purge`, and `gc --apply`. It confirms that no process is using the affected workspaces.
+<ParamField name="REPOSITORY" type="owner/repo, URL, or path">
+GitHub `owner/repo`, any Git URL, or a local path that starts with `/`, `./`, or `../`.
 </ParamField>
 
-There is no force flag, no interactive confirmation, and no command that bypasses the [retention rules](/docs/retention-rules/).
+`desk new` and `desk cd` change your directory only with [shell integration](/docs/shell-integration/). Without it, `desk new` still creates the workspace and prints its path.
 
 ## Output and Exit Status
 
-Results go to standard output, one line per item, so they are easy to read and to script. Errors are printed to standard error with a `desk:` prefix, and desk exits with status `1`:
+Paths and listings go to standard output. Messages and prompts go to standard error, so `cd "$(desk new)"` works in scripts. Errors print with a `desk:` prefix and exit with status `1`:
 
 ```text
-desk: unknown workspace "abc" (use desk list)
+desk: no workspace "nope" (see desk list)
 ```
-
-When a desk session ends because the shell exited with a non-zero status, desk exits with that same status.

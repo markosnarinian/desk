@@ -3,71 +3,46 @@
 A place for the work in between. A small Go CLI that keeps occasional local
 development in managed workspaces, out of your way.
 
-**Status:** initial implementation. macOS and Linux; independent Git clones and
-scratch directories; interactive subshell entry; explicit, conservative cleanup.
-The [GitHub repository](https://github.com/markosnarinian/desk) is private while
-licensing is finalized. No public binary releases have been published.
+**Status:** early and deliberately minimal. macOS and Linux; scratch
+directories and Git clones with two-word names; shell integration for zsh,
+oh-my-zsh, bash, and fish. The [GitHub repository](https://github.com/markosnarinian/desk)
+is private while licensing is finalized. No public binary releases have been published.
 
 ## Build and try it
 
-Requires Go 1.23+; repository operations also need Git.
+Requires Go 1.24+; repositories also need Git.
 
 ```sh
 mkdir -p "$HOME/.local/bin"
 (cd cli && go build -trimpath -o "$HOME/.local/bin/desk" .)
 export PATH="$HOME/.local/bin:$PATH"
-desk scratch experiment
-# Inside the workspace: use your tools, then exit to return.
+eval "$(desk init zsh)"   # or bash; fish: desk init fish | source
 ```
 
 ```sh
-desk open octocat/Hello-World
-desk list
-desk enter ID
-desk keep ID
-desk keep ID --off
-desk done ID
-desk gc --dry-run
+desk new                       # empty workspace, e.g. drifting-tundra; cd's there
+desk new octocat/Hello-World   # clone, or return to the existing clone
+desk list                      # * marks the workspace you're in
+desk cd misty                  # by name or unique prefix; no name: workspace top
+desk path misty                # print the path, for scripts
+desk rm                        # current workspace (or NAME), after confirmation
 ```
 
-Replace `ID` with a full ID from `desk list`. `scratch` and `open` also support
-`--no-enter` for scripting. `open` resumes the same normalized source without
-pulling or resetting. `enter` clears the workspace's done flag.
+Inside a workspace your prompt starts with `(drifting-tundra/src/api)`: the
+workspace and your directory inside it. Commands that take a NAME default to
+the workspace you're in.
 
-## Cleanup is a separate decision
-
-**Git-clean does not mean disposable.** Read the [safety contract](docs/safety.md).
-desk retains ignored and untracked files, local-only history, local-only branch
-and tag names, pins, active desk sessions, and uncertain state. It checks origin's
-current advertised refs, not only cached tracking branches.
-
-`gc` defaults to a dry run. Stop all shells, editors, servers, and detached
-processes using the affected workspaces before using `--quiescent`:
-
-```sh
-desk gc --apply --quiescent
-desk remove ID --quiescent
-desk restore ID
-desk purge ID --quiescent
-```
-
-`remove` and applied `gc` quarantine; they do not permanently delete. `purge`
-requires seven days in quarantine and repeats safety checks. Nothing happens
-automatically on shell exit. There is no force flag. Session locks cannot detect
-every external process, which is why your quiescence acknowledgment is required.
-
-Storage defaults to `~/.desk` on both Linux and macOS, including workspaces,
-registry, locks, and quarantine. `DESK_HOME` overrides the root and must be
-absolute; `XDG_DATA_HOME` is not used. Configuration belongs in `~/.config/desk/`;
-desk currently has no configuration file and does not create that directory.
-Existing data in the previous platform-specific locations is not moved
-automatically; see [configuration](site/content/docs/configuration.mdx).
-Do not use OS-managed temporary storage for work you want to resume. Test fixtures
-use temporary storage only to isolate disposable tests.
+Workspaces are plain directories in `~/.desk/workspaces/<name>` (`DESK_HOME`
+overrides `~/.desk`). There is no registry, background process, or automatic
+cleanup. A repository workspace's source is its Git origin, so `desk new`
+recognizes the same repository however its URL is spelled. See the
+[shell integration](site/content/docs/shell-integration.mdx) and
+[configuration](site/content/docs/configuration.mdx) docs.
 
 ## Development and documentation
 
-- `cli/`: Go executable and tests; no external Go dependencies.
+- `cli/`: Go executable and tests; no external Go dependencies. Shell
+  integration scripts live in `cli/shell/`, embedded and printed by `desk init`.
 - `site/`: Next.js + Chakra UI website: landing page, documentation, and a
   command reference, written in MDX.
 - `scripts/release.sh`: local release archives and SHA-256 checksums.
@@ -95,7 +70,7 @@ scripts/release.sh v0.1.0
 ```
 
 This creates `dist/desk_v0.1.0_{darwin,linux}_{amd64,arm64}.tar.gz` and
-`dist/SHA256SUMS`. Each archive contains `desk` and `SAFETY.md`. Check the checksum
+`dist/SHA256SUMS`. Each archive contains `desk`. Check the checksum
 before extracting; put the executable in a directory on PATH. These binaries are
 not signed or notarized. Source builds are the current installation path.
 
@@ -105,7 +80,6 @@ releases or deploy the site. Website deployment uses the Vercel `desk` project;
 see [website maintenance](docs/website.md) for GitHub connection and build settings.
 Release publication and signing are separate decisions.
 
-## Deliberately absent
+## Deliberately absent, for now
 
-Windows, shell functions, background cleanup, worktree creation/optimization,
-automatic pulls, and age-based workspace collection.
+Windows, editor and Amp integrations, automatic pulls, and any automatic cleanup.

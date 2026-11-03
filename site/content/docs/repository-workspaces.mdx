@@ -1,17 +1,17 @@
 ---
 title: Repository workspaces
-description: Clone a repository into its own workspace, return to it later, and know what keeps it from being cleaned up.
+description: Clone a repository into its own workspace and return to it later.
 ---
 
-## Open a Repository
+## Clone a Repository
 
-`desk open` accepts several forms of repository:
+`desk new` accepts several forms of repository:
 
 <Tabs>
 <Tab title="GitHub shorthand">
 
 ```sh
-desk open octocat/Hello-World
+desk new octocat/Hello-World
 ```
 
 `owner/repo` is expanded to `https://github.com/owner/repo.git`.
@@ -20,18 +20,18 @@ desk open octocat/Hello-World
 <Tab title="URL">
 
 ```sh
-desk open https://gitlab.com/group/project.git
-desk open git@github.com:owner/repo.git
-desk open ssh://git@example.com/repo.git
+desk new https://gitlab.com/group/project.git
+desk new git@github.com:owner/repo.git
+desk new ssh://git@example.com/repo.git
 ```
 
-HTTPS, SSH, `git@` and `file://` URLs are passed to Git as given.
+URLs are passed to Git as given.
 
 </Tab>
 <Tab title="Local path">
 
 ```sh
-desk open ../my-project
+desk new ../my-project
 ```
 
 Local paths must start with `/`, `./`, or `../`. They are converted to an absolute path.
@@ -39,47 +39,32 @@ Local paths must start with `/`, `./`, or `../`. They are converted to an absolu
 </Tab>
 </Tabs>
 
-desk runs `git clone --no-local` into a new workspace, prints its ID, and starts a shell in the checkout. Authentication uses your normal Git and SSH configuration.
+desk runs `git clone` into a new workspace and takes you there. Authentication uses your normal Git and SSH configuration.
 
-## Open It Again
+## Return to It
 
-Running `desk open` again with the same source resumes the existing workspace instead of cloning a second copy:
+Running `desk new` again with the same repository takes you back to the existing workspace instead of cloning a second copy, however you spell it:
 
 ```sh
-desk open octocat/Hello-World   # same ID as before
+desk new octocat/Hello-World
+desk new https://github.com/octocat/hello-world
+desk new git@github.com:octocat/Hello-World.git
 ```
 
-desk does **not** fetch, pull, or reset when it resumes. Update the checkout yourself with Git.
+desk compares each workspace's Git `origin` by host and path, ignoring the scheme, user, and a trailing `.git`. Path case is ignored on GitHub, where it doesn't matter.
 
-<Callout type="info">
-Sources are matched after normalization: `octocat/Hello-World` and `https://github.com/octocat/Hello-World.git` refer to the same workspace. Other spellings of the same remote, such as an SSH URL, are treated as different sources.
-</Callout>
+desk does **not** fetch, pull, or reset when it returns to a clone. Update it yourself with Git. You can also use `desk cd NAME` directly.
 
 ## When a Clone Fails
 
-If `git clone` fails, desk keeps the directory as a **scratch** workspace so you can inspect whatever was left behind, and reports its ID:
+If `git clone` fails, desk removes the new workspace and reports Git's error. Fix the problem, such as credentials or a typo, and run `desk new` again.
 
-```text
-desk: clone failed; workspace 5c1d0e9a7b32 retained for inspection: exit status 128
-```
+## Before Deleting
 
-Fix the problem, such as credentials or a typo, and run `desk open` again. Clean up the failed workspace like any other scratch workspace.
-
-## Getting a Repository Ready for Cleanup
-
-Before marking a repository workspace done, make sure everything you care about exists on origin:
+`desk rm` shows uncommitted changes and unpushed commits before asking, but deletes whatever you confirm. If you're unsure, check first:
 
 ```sh
-git status --short --ignored
+git status --short
 git log --branches --not --remotes
 git stash list
 ```
-
-Then push or delete what is left, and preview:
-
-```sh
-desk done ID
-desk gc
-```
-
-`desk gc` prints the first [retention rule](/docs/retention-rules/) the workspace fails, such as `local-only branch or tag name` or `tracked changes, untracked files, or ignored files`.

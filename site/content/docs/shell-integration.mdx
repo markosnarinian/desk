@@ -1,0 +1,96 @@
+---
+title: Shell integration
+description: Let desk change directories, show the current workspace in your prompt, and complete workspace names in zsh, oh-my-zsh, bash, and fish.
+---
+
+A program can't change its parent shell's directory, so `desk new` and `desk cd` need a small shell function. The same integration adds the current workspace to your prompt and completes commands and workspace names.
+
+## Set It Up
+
+Add one line to your shell's startup file, after any prompt or theme setup:
+
+<Tabs>
+<Tab title="zsh">
+
+```sh
+# ~/.zshrc
+eval "$(desk init zsh)"
+```
+
+</Tab>
+<Tab title="oh-my-zsh">
+
+Install desk as a custom plugin:
+
+```sh
+mkdir -p "$ZSH_CUSTOM/plugins/desk"
+echo 'eval "$(desk init zsh)"' > "$ZSH_CUSTOM/plugins/desk/desk.plugin.zsh"
+```
+
+Then add `desk` to `plugins=(...)` in `~/.zshrc`.
+
+</Tab>
+<Tab title="bash">
+
+```sh
+# ~/.bashrc
+eval "$(desk init bash)"
+```
+
+</Tab>
+<Tab title="fish">
+
+```sh
+# ~/.config/fish/config.fish
+desk init fish | source
+```
+
+</Tab>
+</Tabs>
+
+Open a new terminal to load it.
+
+## What Your Prompt Shows
+
+Inside a workspace, your prompt starts with the workspace name and your directory relative to it:
+
+```text
+(misty-ember/src/api) ➜  api
+```
+
+Outside workspaces nothing changes. The prefix is added in front of your existing prompt, so it works with oh-my-zsh themes and fish's default prompt.
+
+## Placing It Yourself
+
+Set `DESK_PROMPT_DISABLE=1` before loading the integration and use `desk_prompt_info`, which prints `misty-ember/src/api` inside a workspace and nothing elsewhere:
+
+<Tabs>
+<Tab title="zsh">
+
+```sh
+setopt prompt_subst   # oh-my-zsh enables this already
+PROMPT='$(desk_prompt_info) '$PROMPT
+```
+
+</Tab>
+<Tab title="bash">
+
+```sh
+PS1='$(desk_prompt_info) '$PS1
+```
+
+</Tab>
+<Tab title="fish">
+
+Call `desk_prompt_info` from your `fish_prompt` function.
+
+</Tab>
+</Tabs>
+
+## What the Function Does
+
+- `desk new` and `desk cd` move you to the workspace desk prints.
+- `desk rm` moves you to your home directory if you deleted the workspace you were in.
+- Every other command runs the `desk` executable unchanged.
+
+Without integration, `desk new` still works and prints the new workspace's path. Use `cd "$(desk path NAME)"` in place of `desk cd`.

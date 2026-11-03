@@ -6,10 +6,10 @@ description: Build desk from source and put it on your PATH on macOS or Linux.
 ## Requirements
 
 - **macOS or Linux**, on amd64 or arm64.
-- **Go 1.23 or newer**, to build the binary. desk has no Go dependencies outside the standard library.
+- **Go 1.24 or newer**, to build the binary. desk has no Go dependencies outside the standard library.
 - **Git**, to use repository workspaces. Scratch workspaces do not need it.
 
-desk is a single executable. It needs no daemon, shell function, or configuration file, and Go is not needed after the build.
+desk is a single executable. It needs no daemon or configuration file, and Go is not needed after the build.
 
 ## Build from Source
 
@@ -59,11 +59,16 @@ desk version
 
 A source build prints `dev`. Run `desk help` to see every command.
 </Step>
-</Steps>
+<Step title="Add shell integration">
+Load desk's shell function so `desk new` and `desk cd` can change your directory and your prompt shows the current workspace. For zsh:
 
-<Callout type="warning">
-Never run desk with `sudo`. Its data root is private to your user.
-</Callout>
+```sh
+echo 'eval "$(desk init zsh)"' >> ~/.zshrc
+```
+
+See [Shell integration](/docs/shell-integration/) for bash, fish, and oh-my-zsh.
+</Step>
+</Steps>
 
 ## Release Archives
 
@@ -73,11 +78,11 @@ The repository includes a script that builds archives for macOS and Linux on amd
 scripts/release.sh v0.1.0
 ```
 
-Each archive contains the `desk` binary and `SAFETY.md`. Check the archive against `SHA256SUMS` before extracting it. These binaries are not signed or notarized, and none have been published yet, so building from source is the supported way to install.
+Each archive contains the `desk` binary. Check the archive against `SHA256SUMS` before extracting it. These binaries are not signed or notarized, and none have been published yet, so building from source is the supported way to install.
 
 ## Uninstall
 
-Delete the binary. Your workspaces stay where they are. Use `desk list` first if you want to move anything out of them; see [Configuration](/docs/configuration/) for where they live.
+Delete the binary and remove the `desk init` line from your shell's startup file. Your workspaces stay in `~/.desk/workspaces/` until you delete them.
 
 ```sh
 rm "$HOME/.local/bin/desk"

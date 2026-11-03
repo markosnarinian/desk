@@ -1,58 +1,33 @@
 ---
 title: Workspaces
-description: The two kinds of workspace, how they are identified, and the states they move through.
+description: What a workspace is, how it's named, and where it lives.
 ---
 
 ## Two Kinds
 
 | Kind | Created by | Contents |
 | --- | --- | --- |
-| Scratch | `desk scratch [NAME]` | An empty directory |
-| Repository | `desk open REPOSITORY` | An independent Git clone with its own `.git` directory |
+| Scratch | `desk new` | An empty directory |
+| Repository | `desk new REPOSITORY` | A Git clone |
 
-Both kinds live in the same managed storage and use the same commands afterwards.
+Both use the same commands afterwards. `desk list` shows a repository's origin and `scratch` for everything else.
 
-## IDs and Names
+## Names
 
-Every workspace gets a random **12-character hexadecimal ID**, such as `7e4a9b23c810`. The ID is the directory name and the argument every other command takes.
+Every workspace gets a random two-word name, an adjective and a noun, such as `drifting-tundra` or `misty-ember`. The name is the directory name, so there's nothing else to remember.
 
-The **name** is only a label shown by `desk list`. Scratch workspaces are called `scratch` unless you give a name; repository workspaces are named after the repository. Names do not have to be unique.
-
-## States
-
-`desk list` shows one of three states:
-
-<ParamField name="ready">
-The default. The workspace is in managed storage and you can enter it.
-</ParamField>
-<ParamField name="done">
-You marked it with `desk done`. It is a candidate for `desk gc --apply`. Entering it again clears this state.
-</ParamField>
-<ParamField name="quarantined">
-It was moved to quarantine by `desk gc --apply` or `desk remove`. Restore it before entering it.
-</ParamField>
-
-Separately from the state, a workspace can be **pinned** with `desk keep`. A pinned workspace is never moved, and cannot be marked done until you unpin it.
+Commands accept a unique prefix: `desk cd dri` works as long as no other workspace starts with `dri`. Leave the name out entirely and desk uses the workspace containing your current directory, even from deep inside it.
 
 ## Where Workspaces Live
 
-desk keeps everything under one private data root:
-
 ```text
-~/.desk/
-├── registry.json     # workspace names, kinds, sources, and flags
-├── registry.lock
-├── workspaces/       # one directory per workspace ID
-├── quarantine/       # quarantined workspaces, same layout
-└── locks/            # session locks
+~/.desk/workspaces/
+├── drifting-tundra/
+└── misty-ember/          # a clone, with its own .git
 ```
 
-The `PATH` column of `desk list` always shows the real location, including for quarantined workspaces. See [Configuration](/docs/configuration/) for how to change the root.
+That's all. There is no registry: desk reads the directory each time it runs, and a repository workspace's source is its Git `origin`. You can rename, move, or delete workspace directories by hand. See [Configuration](/docs/configuration/) to use a different location.
 
-<Callout type="warning">
-Do not edit `registry.json`, replace workspace directories with symlinks, or share a data root between machines. desk refuses to work with directories that are not ordinary directories.
-</Callout>
+## Lifetime
 
-## Ownership
-
-desk only manages directories it created. It never adopts an existing directory, never follows a symlink in its storage, and never touches anything outside its data root.
+A workspace stays until you run [`desk rm`](/commands/rm/) or delete it yourself. desk never deletes anything on its own, and runs nothing in the background.

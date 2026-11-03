@@ -1,0 +1,61 @@
+---
+title: desk new
+description: Create an empty workspace or a repository clone with a two-word name, and go there.
+---
+
+## Usage
+
+```text title="Usage"
+desk new [REPOSITORY]
+```
+
+## Arguments
+
+<ParamField name="REPOSITORY" type="optional">
+Leave it out for an empty workspace. Otherwise desk clones it into the new workspace. Accepted forms:
+
+- `owner/repo`, which means `https://github.com/owner/repo.git`;
+- a Git URL: `https://…`, `ssh://…`, `git@host:owner/repo`, or `file://…`;
+- a local path starting with `/`, `./`, or `../`.
+</ParamField>
+
+## Behavior
+
+- desk picks an unused two-word name such as `drifting-tundra` and creates `~/.desk/workspaces/drifting-tundra`.
+- With [shell integration](/docs/shell-integration/), your shell moves into the workspace.
+- If a workspace's Git `origin` already points at the same repository, desk goes there instead of cloning again. `owner/repo`, `https://github.com/owner/repo`, and `git@github.com:owner/repo.git` all count as the same repository.
+- desk never pulls, fetches, or resets an existing clone.
+- If the clone fails, the new workspace is removed.
+
+## Examples
+
+```sh
+desk new
+```
+
+```text
+desk: created drifting-tundra
+```
+
+```sh
+desk new octocat/Hello-World
+```
+
+```text
+Cloning into '/home/you/.desk/workspaces/misty-ember'...
+desk: created misty-ember
+```
+
+Running it again with a different spelling of the same repository returns to the existing clone:
+
+```sh
+desk new https://github.com/octocat/hello-world
+```
+
+```text
+desk: misty-ember already has https://github.com/octocat/Hello-World.git
+```
+
+## Output
+
+The workspace's absolute path on standard output, messages on standard error. Without shell integration, `cd "$(desk new)"` does the same thing.

@@ -117,7 +117,7 @@ export function Search({ compact }: { compact?: boolean }) {
             <Dialog.Body p="2" maxH="60vh" overflowY="auto">
               {!query && (
                 <Text p="6" textAlign="center" color="fg.muted" textStyle="sm">
-                  Try “quarantine”, “DESK_HOME”, or “--quiescent”.
+                  Try “prompt”, “DESK_HOME”, or “desk cd”.
                 </Text>
               )}
               {query && !results.length && (

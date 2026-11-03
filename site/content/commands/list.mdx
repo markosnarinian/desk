@@ -1,6 +1,6 @@
 ---
 title: desk list
-description: Show every workspace with its state, retention reason, and location.
+description: Show every workspace and where it came from.
 ---
 
 ## Usage
@@ -9,39 +9,15 @@ description: Show every workspace with its state, retention reason, and location
 desk list
 ```
 
-`list` takes no arguments or flags.
+`list` takes no arguments.
 
 ## Output
 
 ```text
-ID            NAME          STATE        RETENTION                                         PATH
-bb5ff6487d99  "experiment"  ready        eligible with --quiescent                         /home/you/.desk/workspaces/bb5ff6487d99
-702378b08f9e  "scratch"     quarantined  quarantine age: seven days required before purge  /home/you/.desk/quarantine/702378b08f9e
-bf22fab17609  "notes"       done         pinned                                            /home/you/.desk/workspaces/bf22fab17609
+  drifting-tundra  scratch
+* misty-ember      https://github.com/octocat/Hello-World.git
 ```
 
-## Columns
+Each line shows a workspace name and its Git `origin`, or `scratch` for a workspace that is not a clone. `*` marks the workspace containing your current directory.
 
-<ParamField name="ID">
-The workspace ID used by every other command.
-</ParamField>
-<ParamField name="NAME">
-The label, quoted.
-</ParamField>
-<ParamField name="STATE">
-`ready`, `done`, or `quarantined`. See [Workspaces](/docs/workspaces/#states).
-</ParamField>
-<ParamField name="RETENTION">
-The first [retention rule](/docs/retention-rules/) that keeps the workspace, or what it is eligible for:
-
-- `eligible with --quiescent`: it could be quarantined now;
-- `quarantine age: seven days required before purge`: it is quarantined and too young to purge;
-- `eligible for purge with --quiescent`: it is quarantined and could be purged.
-</ParamField>
-<ParamField name="PATH">
-The directory's actual location, in storage or in quarantine.
-</ParamField>
-
-<Callout type="tip">
-`desk list` runs the full retention checks, including `git ls-remote` for repository workspaces, so it may take a moment when you have many repositories.
-</Callout>
+`list` reads only local files, so it is instant and works offline. With no workspaces, it prints a hint to standard error and nothing on standard output.

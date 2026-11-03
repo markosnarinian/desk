@@ -3,528 +3,360 @@
 package main
 
 import (
-	"crypto/rand"
-	"encoding/hex"
-	"encoding/json"
+	"bufio"
+	"embed"
 	"errors"
 	"fmt"
 	"io"
+	"math/rand/v2"
+	"net/url"
 	"os"
 	"os/exec"
-	"os/signal"
 	"path/filepath"
 	"regexp"
 	"strings"
-	"syscall"
 	"text/tabwriter"
-	"time"
 )
 
 var version = "dev"
-var validID = regexp.MustCompile(`^[a-f0-9]{12}$`)
 
-type workspace struct {
-	ID          string
-	Name        string
-	Kind        string
-	Source      string
-	Created     time.Time
-	Pinned      bool
-	Done        bool
-	Quarantined time.Time
-}
+//go:embed shell
+var shells embed.FS
 
-type store struct {
-	root  string
-	items []workspace
-	lock  *os.File
-}
+const help = `desk — workspaces for the work in between
 
-func dataRoot() (string, error) {
+Usage:
+  desk new [REPOSITORY]   Create a workspace (empty, or a clone) and go there
+  desk cd [NAME]          Go to a workspace (needs shell integration)
+  desk path [NAME]        Print a workspace's path
+  desk list               Show workspaces
+  desk rm [NAME]          Delete a workspace after confirmation
+  desk init SHELL         Print shell integration for zsh, bash, or fish
+  desk version            Print version
+
+NAME is a workspace name or a unique prefix of one. Without NAME, desk uses the
+workspace containing the current directory. REPOSITORY is owner/repo (GitHub),
+a Git URL, or a local path; opening the same repository again reuses its workspace.
+
+Shell integration: add  eval "$(desk init zsh)"  to ~/.zshrc (or bash, fish).
+`
+
+// workspacesDir is where every workspace lives, one directory per name.
+func workspacesDir() (string, error) {
 	if p := os.Getenv("DESK_HOME"); p != "" {
 		if !filepath.IsAbs(p) {
 			return "", errors.New("DESK_HOME must be absolute")
 		}
-		return filepath.Clean(p), nil
+		return filepath.Join(filepath.Clean(p), "workspaces"), nil
 	}
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(home, ".desk"), nil
+	return filepath.Join(home, ".desk", "workspaces"), nil
 }
 
-func openStore() (*store, error) {
-	root, err := dataRoot()
+func names(dir string) ([]string, error) {
+	entries, err := os.ReadDir(dir)
+	if errors.Is(err, os.ErrNotExist) {
+		return nil, nil
+	}
 	if err != nil {
 		return nil, err
 	}
-	for _, p := range []string{root, filepath.Join(root, "workspaces"), filepath.Join(root, "quarantine"), filepath.Join(root, "locks")} {
-		if err := os.MkdirAll(p, 0700); err != nil {
-			return nil, err
-		}
-		info, err := os.Lstat(p)
-		if err != nil {
-			return nil, err
-		}
-		if !info.IsDir() || info.Mode()&os.ModeSymlink != 0 {
-			return nil, fmt.Errorf("not an ordinary directory: %s", p)
-		}
-		if err := os.Chmod(p, 0700); err != nil {
-			return nil, err
+	var result []string
+	for _, e := range entries {
+		if e.IsDir() && !strings.HasPrefix(e.Name(), ".") {
+			result = append(result, e.Name())
 		}
 	}
-	f, err := lockFile(filepath.Join(root, "registry.lock"), syscall.LOCK_EX)
-	if err != nil {
-		return nil, err
-	}
-	s := &store{root: root, lock: f}
-	b, err := os.ReadFile(filepath.Join(root, "registry.json"))
-	if err != nil && !errors.Is(err, os.ErrNotExist) {
-		s.close()
-		return nil, err
-	}
-	if len(b) > 0 {
-		if err := json.Unmarshal(b, &s.items); err != nil {
-			s.close()
-			return nil, fmt.Errorf("invalid registry: %w", err)
-		}
-	}
-	seen := map[string]bool{}
-	for _, w := range s.items {
-		if !validID.MatchString(w.ID) || seen[w.ID] || (w.Kind != "scratch" && w.Kind != "repo") {
-			s.close()
-			return nil, errors.New("invalid registry entry")
-		}
-		seen[w.ID] = true
-	}
-	return s, nil
+	return result, nil
 }
 
-func lockFile(path string, mode int) (*os.File, error) {
-	f, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR, 0600)
+// current returns the workspace containing the working directory, or "".
+func current(dir string) string {
+	wd, err := os.Getwd()
 	if err != nil {
-		return nil, err
+		return ""
 	}
-	if err := syscall.Flock(int(f.Fd()), mode); err != nil {
-		f.Close()
-		return nil, err
+	if resolved, err := filepath.EvalSymlinks(wd); err == nil {
+		wd = resolved
 	}
-	return f, nil
+	if resolved, err := filepath.EvalSymlinks(dir); err == nil {
+		dir = resolved
+	}
+	rel, err := filepath.Rel(dir, wd)
+	if err != nil || rel == "." || rel == ".." || strings.HasPrefix(rel, ".."+string(os.PathSeparator)) {
+		return ""
+	}
+	return strings.Split(rel, string(os.PathSeparator))[0]
 }
 
-func (s *store) close() {
-	if s.lock != nil {
-		s.lock.Close()
-		s.lock = nil
+// resolve finds a workspace by exact name or unique prefix; "" means current.
+func resolve(dir, query string) (string, error) {
+	if query == "" {
+		if name := current(dir); name != "" {
+			return name, nil
+		}
+		return "", errors.New("not inside a workspace; give a NAME (see desk list)")
 	}
-}
-func (s *store) save() error {
-	b, err := json.MarshalIndent(s.items, "", "  ")
+	all, err := names(dir)
 	if err != nil {
-		return err
+		return "", err
 	}
-	f, err := os.CreateTemp(s.root, "registry-*")
-	if err != nil {
-		return err
-	}
-	defer os.Remove(f.Name())
-	if _, err = f.Write(b); err == nil {
-		err = f.Sync()
-	}
-	closeErr := f.Close()
-	if err != nil {
-		return err
-	}
-	if closeErr != nil {
-		return closeErr
-	}
-	return os.Rename(f.Name(), filepath.Join(s.root, "registry.json"))
-}
-func (s *store) find(id string) (*workspace, error) {
-	for i := range s.items {
-		if s.items[i].ID == id {
-			return &s.items[i], nil
+	var matches []string
+	for _, n := range all {
+		if n == query {
+			return n, nil
+		}
+		if strings.HasPrefix(n, query) {
+			matches = append(matches, n)
 		}
 	}
-	return nil, fmt.Errorf("unknown workspace %q (use desk list)", id)
+	switch len(matches) {
+	case 0:
+		return "", fmt.Errorf("no workspace %q (see desk list)", query)
+	case 1:
+		return matches[0], nil
+	}
+	return "", fmt.Errorf("%q matches %s", query, strings.Join(matches, ", "))
 }
-func (s *store) location(w *workspace) (string, bool, error) {
-	var found string
-	var quarantined bool
-	for _, state := range []string{"workspaces", "quarantine"} {
-		p := filepath.Join(s.root, state, w.ID)
-		info, err := os.Lstat(p)
-		if errors.Is(err, os.ErrNotExist) {
+
+// reserve creates a new, empty workspace directory with an unused name.
+func reserve(dir string) (string, error) {
+	if err := os.MkdirAll(dir, 0700); err != nil {
+		return "", err
+	}
+	for range 100 {
+		name := adjectives[rand.IntN(len(adjectives))] + "-" + nouns[rand.IntN(len(nouns))]
+		err := os.Mkdir(filepath.Join(dir, name), 0700)
+		if err == nil {
+			return name, nil
+		}
+		if !errors.Is(err, os.ErrExist) {
+			return "", err
+		}
+	}
+	return "", errors.New("could not find an unused workspace name")
+}
+
+var shorthand = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9_.-]*/[A-Za-z0-9][A-Za-z0-9_.-]*$`)
+var scpLike = regexp.MustCompile(`^(?:[^@/]+@)?([^:/]+):(.+)$`)
+
+// repository turns user input into a clone source.
+func repository(input string) (string, error) {
+	switch {
+	case shorthand.MatchString(input):
+		return "https://github.com/" + strings.TrimSuffix(input, ".git") + ".git", nil
+	case strings.HasPrefix(input, "/"), strings.HasPrefix(input, "./"), strings.HasPrefix(input, "../"), input == ".", input == "..":
+		return filepath.Abs(input)
+	case strings.Contains(input, "://"), scpLike.MatchString(input):
+		return input, nil
+	}
+	return "", errors.New("use owner/repo, a Git URL, or a local path such as ./repo")
+}
+
+// sourceKey identifies a repository regardless of how its URL is spelled, so
+// https://github.com/o/r, git@github.com:o/r.git, and o/r all match.
+func sourceKey(source string) string {
+	host, path := "", source
+	if u, err := url.Parse(source); err == nil && strings.Contains(source, "://") {
+		if u.Scheme == "file" {
+			return filepath.Clean(u.Path)
+		}
+		host, path = u.Hostname(), u.Path
+	} else if strings.HasPrefix(source, "/") {
+		return filepath.Clean(source)
+	} else if m := scpLike.FindStringSubmatch(source); m != nil {
+		host, path = m[1], m[2]
+	}
+	host = strings.ToLower(host)
+	path = strings.TrimSuffix(strings.Trim(path, "/"), ".git")
+	if host == "github.com" {
+		path = strings.ToLower(path)
+	}
+	return host + "/" + path
+}
+
+func gitEnv() []string {
+	var env []string
+	for _, v := range os.Environ() {
+		// A parent Git invocation must not redirect desk to another checkout.
+		if strings.HasPrefix(v, "GIT_DIR=") || strings.HasPrefix(v, "GIT_WORK_TREE=") || strings.HasPrefix(v, "GIT_INDEX_FILE=") {
 			continue
 		}
+		env = append(env, v)
+	}
+	return env
+}
+
+func git(dir string, args ...string) string {
+	cmd := exec.Command("git", append([]string{"-C", dir}, args...)...)
+	cmd.Env = gitEnv()
+	b, _ := cmd.Output()
+	return strings.TrimSpace(string(b))
+}
+
+func origin(path string) string {
+	if _, err := os.Stat(filepath.Join(path, ".git")); err != nil {
+		return ""
+	}
+	return git(path, "config", "--get", "remote.origin.url")
+}
+
+func create(dir, input string, stderr io.Writer) (string, error) {
+	source := ""
+	if input != "" {
+		var err error
+		if source, err = repository(input); err != nil {
+			return "", err
+		}
+		all, err := names(dir)
 		if err != nil {
-			return "", false, err
+			return "", err
 		}
-		if !info.IsDir() || info.Mode()&os.ModeSymlink != 0 {
-			return "", false, errors.New("workspace is not an ordinary directory")
+		for _, n := range all {
+			if o := origin(filepath.Join(dir, n)); o != "" && sourceKey(o) == sourceKey(source) {
+				fmt.Fprintf(stderr, "desk: %s already has %s\n", n, o)
+				return filepath.Join(dir, n), nil
+			}
 		}
-		if found != "" {
-			return "", false, errors.New("workspace exists in both storage locations")
+	}
+	name, err := reserve(dir)
+	if err != nil {
+		return "", err
+	}
+	path := filepath.Join(dir, name)
+	if source != "" {
+		cmd := exec.Command("git", "clone", "--", source, path)
+		cmd.Env = gitEnv()
+		cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, stderr, stderr
+		if err := cmd.Run(); err != nil {
+			os.RemoveAll(path)
+			return "", fmt.Errorf("clone failed: %w", err)
 		}
-		found = p
-		quarantined = state == "quarantine"
 	}
-	if found == "" {
-		return "", false, errors.New("workspace directory missing; registry retained")
-	}
-	return found, quarantined, nil
-}
-func (s *store) create(name, kind, source string) (*workspace, error) {
-	b := make([]byte, 6)
-	if _, err := rand.Read(b); err != nil {
-		return nil, err
-	}
-	w := workspace{ID: hex.EncodeToString(b), Name: name, Kind: kind, Source: source, Created: time.Now().UTC()}
-	p := filepath.Join(s.root, "workspaces", w.ID)
-	if err := os.Mkdir(p, 0700); err != nil {
-		return nil, err
-	}
-	s.items = append(s.items, w)
-	if err := s.save(); err != nil {
-		os.Remove(p)
-		s.items = s.items[:len(s.items)-1]
-		return nil, err
-	}
-	return &s.items[len(s.items)-1], nil
+	fmt.Fprintf(stderr, "desk: created %s\n", name)
+	return path, nil
 }
 
-func (s *store) enter(w *workspace) error {
-	p, q, err := s.location(w)
-	if err != nil {
-		return err
+func remove(dir, name string, in io.Reader, stderr io.Writer) error {
+	path := filepath.Join(dir, name)
+	what := "empty"
+	if entries, _ := os.ReadDir(path); len(entries) > 0 {
+		what = "has files"
 	}
-	if q {
-		return errors.New("workspace is quarantined; restore it first")
+	if o := origin(path); o != "" {
+		what = o
 	}
-	f, err := lockFile(filepath.Join(s.root, "locks", w.ID), syscall.LOCK_SH)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-	w.Done = false
-	if err := s.save(); err != nil {
-		return err
-	}
-	s.close()
-	shell := os.Getenv("SHELL")
-	if shell == "" {
-		shell = "/bin/sh"
-	}
-	cmd := exec.Command(shell, "-i")
-	cmd.Dir = p
-	cmd.Env = append(os.Environ(), "DESK_WORKSPACE="+w.ID)
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	// Preserve the session lock in children as well as the supervising process.
-	cmd.ExtraFiles = []*os.File{f}
-	fmt.Fprintf(os.Stderr, "desk: entering %s (%s); exit to return; nothing is deleted\n", w.Name, w.ID)
-	// The foreground shell receives terminal signals too. Do not abandon its lock.
-	signals := make(chan os.Signal, 1)
-	signal.Notify(signals, syscall.SIGINT, syscall.SIGQUIT)
-	defer signal.Stop(signals)
-	return cmd.Run()
-}
-
-func (s *store) retention(w *workspace) string {
-	if w.Pinned {
-		return "pinned"
-	}
-	p, _, err := s.location(w)
-	if err != nil {
-		return err.Error()
-	}
-	f, err := lockFile(filepath.Join(s.root, "locks", w.ID), syscall.LOCK_EX|syscall.LOCK_NB)
-	if err != nil {
-		return "active session or unavailable session lock"
-	}
-	defer f.Close()
-	if w.Kind == "repo" {
-		return s.repositoryRetention(p)
-	}
-	entries, err := os.ReadDir(p)
-	if err != nil {
-		return "cannot read workspace"
-	}
-	if len(entries) != 0 {
-		return "scratch contains files"
-	}
-	return ""
-}
-
-func (s *store) quarantine(w *workspace) error {
-	if reason := s.retention(w); reason != "" {
-		return errors.New(reason)
-	}
-	p, q, err := s.location(w)
-	if err != nil {
-		return err
-	}
-	if q {
-		return errors.New("already quarantined")
-	}
-	if err := os.Rename(p, filepath.Join(s.root, "quarantine", w.ID)); err != nil {
-		return err
-	}
-	w.Quarantined = time.Now().UTC()
-	return s.save()
-}
-
-func (s *store) restore(w *workspace) error {
-	p, q, err := s.location(w)
-	if err != nil {
-		return err
-	}
-	if !q {
-		return errors.New("workspace is not quarantined")
-	}
-	if err := os.Rename(p, filepath.Join(s.root, "workspaces", w.ID)); err != nil {
-		return err
-	}
-	w.Quarantined = time.Time{}
-	w.Done = false
-	return s.save()
-}
-
-func (s *store) purge(w *workspace) error {
-	p, q, err := s.location(w)
-	if err != nil {
-		return err
-	}
-	if !q {
-		return errors.New("only quarantined workspaces can be purged")
-	}
-	if w.Quarantined.IsZero() || time.Since(w.Quarantined) < 7*24*time.Hour {
-		return errors.New("quarantine must be at least seven days old; restore and remove again if its timestamp is missing")
-	}
-	if reason := s.retention(w); reason != "" {
-		return errors.New(reason)
-	}
-	if err := os.RemoveAll(p); err != nil {
-		return err
-	}
-	for i := range s.items {
-		if s.items[i].ID == w.ID {
-			s.items = append(s.items[:i], s.items[i+1:]...)
-			break
+	var notes []string
+	if _, err := os.Stat(filepath.Join(path, ".git")); err == nil {
+		if status := git(path, "status", "--porcelain"); status != "" {
+			notes = append(notes, fmt.Sprintf("%d uncommitted changes", strings.Count(status, "\n")+1))
+		}
+		if n := git(path, "rev-list", "--count", "--branches", "--not", "--remotes"); n != "" && n != "0" {
+			notes = append(notes, n+" unpushed commits")
 		}
 	}
-	return s.save()
-}
-
-func (s *store) gc(apply bool, out io.Writer) error {
-	for i := range s.items {
-		w := &s.items[i]
-		_, q, err := s.location(w)
-		reason := ""
-		if err != nil {
-			reason = err.Error()
-		} else if q {
-			reason = "already quarantined"
-		} else if !w.Done {
-			reason = "not marked done"
-		} else {
-			reason = s.retention(w)
-		}
-		if reason != "" {
-			fmt.Fprintf(out, "%s retained: %s\n", w.ID, reason)
-			continue
-		}
-		if !apply {
-			fmt.Fprintf(out, "%s would quarantine (requires --apply --quiescent)\n", w.ID)
-			continue
-		}
-		if err := s.quarantine(w); err != nil {
-			return err
-		}
-		fmt.Fprintln(out, w.ID, "quarantined")
+	if len(notes) > 0 {
+		what += "; " + strings.Join(notes, ", ")
 	}
+	fmt.Fprintf(stderr, "Delete %s (%s)? [y/N] ", name, what)
+	answer, _ := bufio.NewReader(in).ReadString('\n')
+	if a := strings.ToLower(strings.TrimSpace(answer)); a != "y" && a != "yes" {
+		return errors.New("nothing deleted")
+	}
+	if err := os.RemoveAll(path); err != nil {
+		return err
+	}
+	fmt.Fprintf(stderr, "desk: deleted %s\n", name)
 	return nil
 }
 
-const help = `desk — managed local workspaces
-
-Usage:
-  desk scratch [NAME] [--no-enter]      Create a scratch workspace
-  desk open REPOSITORY [--no-enter]     Clone or resume a repository
-  desk enter ID                        Enter an existing workspace
-  desk list                            Show managed workspaces
-  desk keep ID [--off]                  Pin or unpin a workspace
-  desk done ID                         Mark a workspace for cleanup
-  desk gc [--dry-run]                   Explain cleanup (default: dry run)
-  desk gc --apply --quiescent           Quarantine safe, done workspaces
-  desk remove ID --quiescent            Quarantine a safe workspace
-  desk restore ID                      Recover a quarantined workspace
-  desk purge ID --quiescent             Permanently remove after seven days
-  desk version                         Print version
-
-Use exit to leave a subshell. Nothing is deleted on exit.
---quiescent acknowledges that all external processes using the workspace stopped.
-`
-
-func run(args []string, out io.Writer) error {
-	if len(args) > 1 && (args[0] == "help" || args[0] == "--help" || args[0] == "version") {
-		return errors.New("help and version take no arguments")
+func run(args []string, in io.Reader, out, stderr io.Writer) error {
+	command, rest := "help", []string(nil)
+	if len(args) > 0 {
+		command, rest = args[0], args[1:]
 	}
-	if len(args) == 0 || args[0] == "help" || args[0] == "--help" {
+	maxArgs := map[string]int{"new": 1, "path": 1, "rm": 1, "list": 0, "init": 1, "version": 0, "help": 0, "--help": 0, "-h": 0}
+	limit, ok := maxArgs[command]
+	if command == "cd" {
+		return errors.New(`desk cd needs shell integration: eval "$(desk init zsh)" (or bash, fish); or cd "$(desk path NAME)"`)
+	}
+	if !ok {
+		return fmt.Errorf("unknown command %q; see desk help", command)
+	}
+	if len(rest) > limit || (command == "init" && len(rest) != 1) {
+		return fmt.Errorf("wrong arguments for %s; see desk help", command)
+	}
+	arg := ""
+	if len(rest) == 1 {
+		arg = rest[0]
+	}
+	switch command {
+	case "help", "--help", "-h":
 		fmt.Fprint(out, help)
 		return nil
-	}
-	if args[0] == "version" {
+	case "version":
 		fmt.Fprintln(out, version)
 		return nil
-	}
-	command := args[0]
-	var pos []string
-	flags := map[string]bool{}
-	allowed := map[string]string{"scratch": "--no-enter", "open": "--no-enter", "enter": "", "list": "", "remove": "--quiescent", "keep": "--off", "done": "", "gc": "--dry-run --apply --quiescent", "restore": "", "purge": "--quiescent"}
-	options, ok := allowed[command]
-	if !ok {
-		return fmt.Errorf("unknown command %q; use desk help", command)
-	}
-	for _, a := range args[1:] {
-		if strings.HasPrefix(a, "-") {
-			if !strings.Contains(" "+options+" ", " "+a+" ") {
-				return fmt.Errorf("unknown option %s for %s", a, command)
-			}
-			flags[a] = true
-		} else {
-			pos = append(pos, a)
+	case "init":
+		script, err := shells.ReadFile("shell/desk." + arg)
+		if err != nil {
+			return fmt.Errorf("unsupported shell %q; use zsh, bash, or fish", arg)
 		}
-	}
-	count := 1
-	if command == "list" || command == "gc" {
-		count = 0
-	}
-	if len(pos) != count && !(command == "scratch" && len(pos) == 0) {
-		return fmt.Errorf("invalid arguments for %s; use desk help", command)
-	}
-	if flags["--apply"] && flags["--dry-run"] {
-		return errors.New("--apply and --dry-run cannot be combined")
-	}
-	if (command == "remove" || command == "purge" || flags["--apply"]) && !flags["--quiescent"] {
-		return errors.New("requires --quiescent: stop all processes using the workspace first")
-	}
-	s, err := openStore()
-	if err != nil {
+		_, err = out.Write(script)
 		return err
 	}
-	defer s.close()
-	if command == "scratch" {
-		name := "scratch"
-		if len(pos) > 0 {
-			name = pos[0]
-		}
-		w, err := s.create(name, "scratch", "")
-		if err != nil {
-			return err
-		}
-		fmt.Fprintln(out, w.ID)
-		if !flags["--no-enter"] {
-			return s.enter(w)
-		}
-		return nil
-	}
-	if command == "open" {
-		w, err := s.openRepository(pos[0])
-		if err != nil {
-			return err
-		}
-		fmt.Fprintln(out, w.ID)
-		if !flags["--no-enter"] {
-			return s.enter(w)
-		}
-		return nil
-	}
-	if command == "gc" {
-		return s.gc(flags["--apply"], out)
-	}
-	if command == "list" {
-		t := tabwriter.NewWriter(out, 0, 4, 2, ' ', 0)
-		fmt.Fprintln(t, "ID\tNAME\tSTATE\tRETENTION\tPATH")
-		for i := range s.items {
-			w := &s.items[i]
-			p, q, e := s.location(w)
-			state := "ready"
-			if q {
-				state = "quarantined"
-			} else if w.Done {
-				state = "done"
-			}
-			reason := s.retention(w)
-			if e != nil {
-				reason = e.Error()
-			}
-			if reason == "" {
-				if q {
-					reason = "eligible for purge with --quiescent"
-					if w.Quarantined.IsZero() || time.Since(w.Quarantined) < 7*24*time.Hour {
-						reason = "quarantine age: seven days required before purge"
-					}
-				} else {
-					reason = "eligible with --quiescent"
-				}
-			}
-			fmt.Fprintf(t, "%s\t%q\t%s\t%s\t%s\n", w.ID, w.Name, state, reason, p)
-		}
-		return t.Flush()
-	}
-	w, err := s.find(pos[0])
+	dir, err := workspacesDir()
 	if err != nil {
 		return err
 	}
 	switch command {
-	case "enter":
-		return s.enter(w)
-	case "keep":
-		w.Pinned = !flags["--off"]
-		return s.save()
-	case "done":
-		if w.Pinned {
-			return errors.New("workspace is pinned; use keep ID --off first")
-		}
-		_, q, err := s.location(w)
+	case "new":
+		path, err := create(dir, arg, stderr)
 		if err != nil {
 			return err
 		}
-		if q {
-			return errors.New("already quarantined")
-		}
-		w.Done = true
-		return s.save()
-	case "restore":
-		if err := s.restore(w); err != nil {
+		fmt.Fprintln(out, path)
+	case "path", "rm":
+		name, err := resolve(dir, arg)
+		if err != nil {
 			return err
 		}
-		fmt.Fprintln(out, "restored", w.ID)
-	case "purge":
-		id := w.ID
-		if err := s.purge(w); err != nil {
+		if command == "rm" {
+			return remove(dir, name, in, stderr)
+		}
+		fmt.Fprintln(out, filepath.Join(dir, name))
+	case "list":
+		all, err := names(dir)
+		if err != nil {
 			return err
 		}
-		fmt.Fprintln(out, "purged", id)
-	case "remove":
-		if err := s.quarantine(w); err != nil {
-			return err
+		if len(all) == 0 {
+			fmt.Fprintln(stderr, "No workspaces yet. Create one with desk new.")
+			return nil
 		}
-		fmt.Fprintln(out, "quarantined", w.ID)
+		here := current(dir)
+		t := tabwriter.NewWriter(out, 0, 4, 2, ' ', 0)
+		for _, n := range all {
+			marker, source := " ", "scratch"
+			if n == here {
+				marker = "*"
+			}
+			if o := origin(filepath.Join(dir, n)); o != "" {
+				source = o
+			}
+			fmt.Fprintf(t, "%s %s\t%s\n", marker, n, source)
+		}
+		return t.Flush()
 	}
 	return nil
 }
 
 func main() {
-	if err := run(os.Args[1:], os.Stdout); err != nil {
+	if err := run(os.Args[1:], os.Stdin, os.Stdout, os.Stderr); err != nil {
 		fmt.Fprintln(os.Stderr, "desk:", err)
-		var exit *exec.ExitError
-		if errors.As(err, &exit) && exit.ExitCode() > 0 {
-			os.Exit(exit.ExitCode())
-		}
 		os.Exit(1)
 	}
 }

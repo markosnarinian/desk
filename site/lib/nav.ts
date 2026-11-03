@@ -4,10 +4,9 @@ export type NavGroup = { label: string; icon: string; items: NavItem[] }
 export type Section = { id: "docs" | "commands"; label: string; groups: NavGroup[] }
 
 const create: Badge = { text: "NEW", color: "green" }
-const run: Badge = { text: "RUN", color: "blue" }
+const move: Badge = { text: "MOVE", color: "blue" }
 const read: Badge = { text: "READ", color: "gray" }
-const mark: Badge = { text: "MARK", color: "purple" }
-const move: Badge = { text: "MOVE", color: "orange" }
+const setup: Badge = { text: "SETUP", color: "purple" }
 const remove: Badge = { text: "DELETE", color: "red" }
 
 export const sections: Section[] = [
@@ -29,27 +28,18 @@ export const sections: Section[] = [
         icon: "layers",
         items: [
           { slug: "workspaces", label: "Workspaces" },
-          { slug: "sessions", label: "Sessions" },
-          { slug: "cleanup-lifecycle", label: "Cleanup lifecycle" },
-          { slug: "retention-rules", label: "Retention rules" },
+          { slug: "shell-integration", label: "Shell integration" },
         ],
       },
       {
         label: "Guides",
         icon: "compass",
-        items: [
-          { slug: "scratch-experiments", label: "Scratch experiments" },
-          { slug: "repository-workspaces", label: "Repository workspaces" },
-          { slug: "recovering-work", label: "Recovering work" },
-        ],
+        items: [{ slug: "repository-workspaces", label: "Repository workspaces" }],
       },
       {
         label: "Reference",
         icon: "settings",
-        items: [
-          { slug: "configuration", label: "Configuration" },
-          { slug: "troubleshooting", label: "Troubleshooting" },
-        ],
+        items: [{ slug: "configuration", label: "Configuration" }],
       },
     ],
   },
@@ -59,40 +49,24 @@ export const sections: Section[] = [
     groups: [
       { label: "Overview", icon: "info", items: [{ slug: "overview", label: "Overview" }] },
       {
-        label: "Create",
-        icon: "plus",
-        items: [
-          { slug: "scratch", label: "desk scratch", badge: create },
-          { slug: "open", label: "desk open", badge: create },
-        ],
-      },
-      {
-        label: "Work",
+        label: "Workspaces",
         icon: "terminal",
         items: [
-          { slug: "enter", label: "desk enter", badge: run },
+          { slug: "new", label: "desk new", badge: create },
+          { slug: "cd", label: "desk cd", badge: move },
+          { slug: "path", label: "desk path", badge: read },
           { slug: "list", label: "desk list", badge: read },
+          { slug: "rm", label: "desk rm", badge: remove },
         ],
       },
       {
-        label: "Retain",
-        icon: "pin",
+        label: "Other",
+        icon: "hash",
         items: [
-          { slug: "keep", label: "desk keep", badge: mark },
-          { slug: "done", label: "desk done", badge: mark },
+          { slug: "init", label: "desk init", badge: setup },
+          { slug: "version", label: "desk version", badge: read },
         ],
       },
-      {
-        label: "Clean up",
-        icon: "archive",
-        items: [
-          { slug: "gc", label: "desk gc", badge: move },
-          { slug: "remove", label: "desk remove", badge: move },
-          { slug: "restore", label: "desk restore", badge: move },
-          { slug: "purge", label: "desk purge", badge: remove },
-        ],
-      },
-      { label: "Other", icon: "hash", items: [{ slug: "version", label: "desk version", badge: read }] },
     ],
   },
 ]

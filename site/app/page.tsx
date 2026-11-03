@@ -26,34 +26,34 @@ import { ColorModeButton } from "@/components/ui/color-mode"
 export const metadata = { alternates: { canonical: "/" } }
 
 const features = [
-  { icon: "scratch", title: "Scratch workspaces", text: "Get an empty directory for an idea in one command. No naming, no deciding where it lives." },
-  { icon: "git", title: "Repository workspaces", text: "Clone owner/repo, any Git URL, or a local path into its own managed checkout, and resume it later." },
-  { icon: "terminal", title: "Your shell, your tools", text: "desk opens your $SHELL inside the workspace. Exit to go back. There is no daemon and no shell hook." },
-  { icon: "list", title: "One list", text: "desk list shows every workspace, its state, its path, and the reason it would be kept." },
-  { icon: "archive", title: "Quarantine, not delete", text: "Cleanup moves workspaces to quarantine first. Restore anything with one command." },
-  { icon: "shield", title: "Proven safe or kept", text: "Uncommitted, untracked, ignored, or unpushed work keeps a workspace around." },
+  { icon: "scratch", title: "Scratch workspaces", text: "desk new gives you an empty directory with a name like drifting-tundra. No naming, no deciding where it lives." },
+  { icon: "git", title: "Repository workspaces", text: "desk new owner/repo clones into its own workspace. Run it again, however you spell the URL, and you're back in the same clone." },
+  { icon: "terminal", title: "Your prompt knows", text: "In zsh, oh-my-zsh, bash, and fish, your prompt shows the workspace and where you are inside it." },
+  { icon: "list", title: "One list", text: "desk list shows every workspace and its origin, instantly and offline. * marks the one you're in." },
+  { icon: "compass", title: "Names, not paths", text: "desk cd misty jumps to a workspace by name or unique prefix. With no name, it goes to the top of the current one." },
+  { icon: "trash", title: "Gone when you say so", text: "desk rm shows uncommitted and unpushed work, then asks. Nothing is deleted automatically." },
 ]
 
 const steps = [
-  { title: "Start", command: "desk scratch experiment", text: "desk creates a workspace and opens a subshell in it." },
-  { title: "Work and leave", command: "exit", text: "Leaving never deletes anything. Come back with desk enter." },
-  { title: "Finish deliberately", command: "desk done ID", text: "Marking a workspace done makes it a cleanup candidate." },
-  { title: "Clean up safely", command: "desk gc", text: "Preview first, then quarantine only what passes every check." },
+  { title: "Start", command: "desk new", text: "Creates a workspace with a two-word name and moves you there." },
+  { title: "Clone", command: "desk new owner/repo", text: "Clones into a new workspace, or returns to the existing clone." },
+  { title: "Move around", command: "desk cd misty", text: "Jump between workspaces by name or prefix. Your prompt follows." },
+  { title: "Finish", command: "desk rm", text: "Deletes the workspace you're in, after you confirm." },
 ]
 
-const retained = [
-  "Pinned workspaces and workspaces with an active session",
-  "Scratch workspaces that contain any file, including dotfiles",
-  "Tracked changes, untracked files, and ignored files",
-  "Branches, tags, commits, stashes, and reflogs that origin does not have",
-  "Submodules, Git LFS and other content filters, extra worktrees",
-  "Anything desk cannot check, such as an unreachable origin",
+const shellFeatures = [
+  "The workspace name and your path inside it, in front of your prompt",
+  "desk new and desk cd change your directory",
+  "Tab completion for commands and workspace names",
+  "Works with oh-my-zsh themes and fish's default prompt",
+  "desk_prompt_info for placing it in a custom prompt",
 ]
 
-const session = `$ desk gc
-bb5ff6487d99 retained: not marked done
-702378b08f9e would quarantine (requires --apply --quiescent)
-bf22fab17609 retained: scratch contains files`
+const session = `➜  ~ desk cd misty
+(misty-ember) ➜  misty-ember cd src/api
+(misty-ember/src/api) ➜  api desk list
+  drifting-tundra  scratch
+* misty-ember      https://github.com/octocat/Hello-World.git`
 
 function Navbar() {
   return (
@@ -108,14 +108,14 @@ export default function Home() {
         <Container maxW="6xl" py={{ base: "16", md: "24" }}>
           <Stack gap="6" align="center" textAlign="center" maxW="3xl" mx="auto">
             <Badge colorPalette="teal" variant="surface" size="lg" rounded="full" px="3">
-              Initial release · macOS and Linux
+              Early and minimal · macOS and Linux
             </Badge>
             <Heading as="h1" size={{ base: "4xl", md: "6xl" }} letterSpacing="tight">
               A place for the work in between
             </Heading>
             <Text textStyle={{ base: "lg", md: "xl" }} color="fg.muted" maxW="2xl">
-              desk gives quick experiments and one-off clones their own managed workspaces, then cleans up only what it
-              can prove is safe to lose.
+              desk gives quick experiments and one-off clones named workspaces, a few commands to move between
+              them, and a prompt that shows where you are.
             </Text>
             <HStack gap="3" flexWrap="wrap" justify="center">
               <Button asChild size="lg" colorPalette="teal">
@@ -139,21 +139,24 @@ export default function Home() {
               <Text textStyle="xs" color="fg.muted">
                 Terminal
               </Text>
-              <CopyButton value="desk scratch experiment" label="Copy command" />
+              <CopyButton value="desk new octocat/Hello-World" label="Copy command" />
             </HStack>
             <Box as="pre" p="5" fontFamily="mono" textStyle="sm" lineHeight="1.8" overflowX="auto" color="fg.muted">
               <Text as="span" color="fg">
-                $ desk scratch experiment
+                $ desk new octocat/Hello-World
               </Text>
-              {"\n7e4a9b23c810\ndesk: entering experiment (7e4a9b23c810); exit to return; nothing is deleted\n"}
+              {"\nCloning into '/home/you/.desk/workspaces/misty-ember'...\ndesk: created misty-ember\n"}
               <Text as="span" color="fg">
-                $ exit
+                (misty-ember) $ desk new
+              </Text>
+              {"\ndesk: created drifting-tundra\n"}
+              <Text as="span" color="fg">
+                (drifting-tundra) $ desk cd mis
               </Text>
               {"\n"}
               <Text as="span" color="fg">
-                $ desk list
+                (misty-ember) $
               </Text>
-              {"\nID            NAME          STATE  RETENTION                  PATH\n7e4a9b23c810  \"experiment\"  ready  eligible with --quiescent  ~/.desk/workspaces/7e4a9b23c810"}
             </Box>
           </Card.Root>
         </Container>
@@ -162,8 +165,8 @@ export default function Home() {
           <Container maxW="6xl">
             <SectionHeader
               tag="Why desk"
-              title="Stop collecting directories you are afraid to delete"
-              text="Throwaway work tends to stick around: test-2, tmp-fix, a third clone of the same repo. desk keeps it in one place and keeps track of what is still worth keeping."
+              title="Stop collecting test-2 and tmp-fix"
+              text="Throwaway work tends to stick around: test-2, tmp-fix, a third clone of the same repo. desk keeps it in one place, under names you can remember."
             />
             <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} gap="6" mt="14">
               {features.map((f) => {
@@ -189,8 +192,8 @@ export default function Home() {
         <Container maxW="6xl" py={{ base: "16", md: "24" }}>
           <SectionHeader
             tag="How it works"
-            title="Four commands, from idea to cleanup"
-            text="Creating a workspace and getting rid of it are separate steps. Nothing happens on a timer."
+            title="Four commands, from idea to done"
+            text="Everything else is your normal shell and tools. Nothing happens in the background."
           />
           <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} gap="8" mt="14">
             {steps.map((s, i) => (
@@ -217,17 +220,17 @@ export default function Home() {
             <SimpleGrid columns={{ base: 1, lg: 2 }} gap={{ base: "10", lg: "16" }} alignItems="center">
               <Stack gap="5">
                 <Text textStyle="sm" fontWeight="semibold" color="teal.fg">
-                  Safety
+                  Shell integration
                 </Text>
                 <Heading as="h2" size={{ base: "2xl", md: "3xl" }}>
-                  A clean git status does not mean it is safe to delete
+                  Your prompt shows where you are
                 </Heading>
                 <Text color="fg.muted" textStyle="lg">
-                  Before anything leaves your workspaces, desk asks origin what it actually has. If desk cannot prove the
-                  work exists somewhere else, it keeps the workspace and tells you why.
+                  One line in your shell's startup file lets desk change your directory and puts the current workspace in
+                  front of your prompt, in zsh, oh-my-zsh, bash, and fish.
                 </Text>
                 <List.Root gap="2.5" variant="plain">
-                  {retained.map((item) => (
+                  {shellFeatures.map((item) => (
                     <List.Item key={item} alignItems="flex-start">
                       <List.Indicator asChild color="teal.fg" mt="1">
                         <LuCircleCheck />
@@ -237,21 +240,20 @@ export default function Home() {
                   ))}
                 </List.Root>
                 <Link asChild color="teal.fg" fontWeight="medium" alignSelf="flex-start">
-                  <NextLink href="/docs/retention-rules/">
-                    Read the retention rules <LuArrowRight />
+                  <NextLink href="/docs/shell-integration/">
+                    Set up shell integration <LuArrowRight />
                   </NextLink>
                 </Link>
               </Stack>
               <Card.Root variant="outline" overflow="hidden">
                 <Box px="4" py="2.5" borderBottomWidth="1px" textStyle="xs" color="fg.muted">
-                  Dry run (the default)
+                  oh-my-zsh, robbyrussell theme
                 </Box>
                 <Box as="pre" p="5" fontFamily="mono" textStyle="xs" lineHeight="1.9" overflowX="auto">
                   {session}
                 </Box>
                 <Box px="4" py="3" borderTopWidth="1px" textStyle="sm" color="fg.muted">
-                  Nothing moves until you run <Code>desk gc --apply --quiescent</Code>, and even then it goes to
-                  quarantine, not the trash.
+                  Add <Code>eval "$(desk init zsh)"</Code> to <Code>~/.zshrc</Code>, or the bash or fish equivalent.
                 </Box>
               </Card.Root>
             </SimpleGrid>
