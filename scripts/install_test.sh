@@ -113,6 +113,7 @@ pass() { count=$((count + 1)); printf 'ok %s - %s\n' "$count" "$*"; }
 run() { sh "$installer" "$@" > "$tmp/output" 2>&1; }
 installed() {
   destination=${DESK_INSTALL_DIR:-$HOME/.local/bin}
+  destination=$(CDPATH= cd -P "$destination" && pwd -P)
   [ "$("$destination/desk" version)" = v1.2.3 ] || die 'installed version'
   [ "$(cat "$TEST_VERSION_LOG")" = "$destination/desk version" ] || die 'version invocation not recorded'
   [ "$(cat "$destination/desk.LICENSE")" = 'Fixture license' ] || die 'license missing'
@@ -154,6 +155,13 @@ for platform in Linux:x86_64 Linux:amd64 Linux:aarch64 Linux:arm64 Darwin:x86_64
   grep -q "/download/v1.2.3/desk_v1.2.3_${os}_${arch}.tar.gz$" "$TEST_DOWNLOAD_LOG" || die 'wrong target URL'
   pass "$platform explicit version and directory with spaces"
 done
+
+reset
+ln -s "$HOME" "$tmp/linked home"
+export DESK_INSTALL_DIR="$tmp/linked home/.local/bin"
+run || die 'install through directory symlink'
+installed
+pass 'symlinked installation directory uses canonical absolute init path'
 
 reset
 export DESK_VERSION=v1.2.3
