@@ -12,8 +12,6 @@ Licensed under [GNU AGPL v3](LICENSE).
 
 ## Install
 
-First release pending. Until publication, use [a source build](site/content/docs/installation.mdx#build-from-source).
-
 **Homebrew** — no Go required:
 
 ```sh

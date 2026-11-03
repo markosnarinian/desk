@@ -5,10 +5,6 @@ description: Install desk with Homebrew, a verified binary download, Go, or a so
 
 desk runs on macOS and Linux, on amd64 and arm64. Git is needed for clones; an authenticated [Amp CLI](https://ampcode.com) is needed for `desk amp`.
 
-<Callout type="warning" title="First release pending">
-The release installation paths below are prepared but not published yet. Use [Build from source](#build-from-source) today.
-</Callout>
-
 ## Choose an install method
 
 <Tabs>
@@ -36,7 +32,7 @@ Choose a version or directory, or skip automatic shell setup:
 curl -fsSL https://raw.githubusercontent.com/markosnarinian/desk/main/site/public/install.sh | DESK_VERSION=v0.1.0 DESK_INSTALL_DIR="$HOME/.local/bin" sh -s -- --no-init
 ```
 
-`v0.1.0` is an example; choose a [published release](https://github.com/markosnarinian/desk/releases). Failed downloads or checksums leave an existing binary unchanged.
+Choose any [published release](https://github.com/markosnarinian/desk/releases). Failed downloads or checksums leave an existing binary unchanged.
 </Tab>
 <Tab title="Go">
 Requires Go 1.24 or newer. No clone needed.

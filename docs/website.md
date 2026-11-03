@@ -36,7 +36,7 @@ The `desk` project in `markos-narinians-projects` uses root directory `site`.
 Vercel's Next.js builder reads `.next` and deploys the static export from it;
 pointing it at `out` fails.
 - GitHub source: `markosnarinian/desk`. Linking and Git-based deployments require
-  the Vercel GitHub integration to have access to this private repository.
+  the Vercel GitHub integration to have access to the repository.
 
 `SITE_URL`, when set, is the canonical production URL, including `https://`.
 On Vercel, the site otherwise uses `VERCEL_PROJECT_PRODUCTION_URL` for canonical
