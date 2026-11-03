@@ -28,9 +28,10 @@ npm --prefix site run dev
 ## Vercel configuration
 
 The `desk` project in `markos-narinians-projects` uses root directory `site`.
-`site/vercel.json` sets the framework to Next.js, overriding the project's
-dashboard settings. Vercel's Next.js builder handles the static export itself;
-do not set an output directory, because it expects Next.js's own `.next` output.
+`site/vercel.json` sets the framework to Next.js and the output directory to
+`.next`, overriding the project's dashboard settings (still Astro's `dist`).
+Vercel's Next.js builder reads `.next` and deploys the static export from it;
+pointing it at `out` fails.
 - GitHub source: `markosnarinian/desk`. Linking and Git-based deployments require
   the Vercel GitHub integration to have access to this private repository.
 
